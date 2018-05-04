@@ -1,5 +1,5 @@
 /*       
- _________ __                     .___       __________                        ____   ________ 
+  _________ __                     .___       __________                        ____   ________ 
  /   _____//  |_  ____ _____     __| _/__.__. \______   \_____    ______ ______ \   \ /   /_   |
  \_____  \\   __\/ __ \\__  \   / __ <   |  |  |     ___/\__  \  /  ___//  ___/  \       / |   |
  /        \|  | \  ___/ / __ \_/ /_/ |\___  |  |    |     / __ \_\___ \ \___ \    \     /  |   |
@@ -8,13 +8,13 @@
 ================================================================================================
 ************************************************************************************************
 ---|FILE: SteadyPassV1.ino
----|Created By: Dimitri
+---|Created By: Dimitry
 ---|Description: This is the code used to make everything work 
 ---|
 ---|
 ---|Change History:
 ---|	
----|	1.0	- Sam - Renamed File from "Limiter_16_53.ino", Added Title and Change History, All previous Version are now in the Hands of Dmitri
+---|	1.0	- Sam - Renamed File from "Limiter_16_53.ino", Added Title and Change History, Added Function comment and Descriptions, All previous Versions named "Limiter_xx_xx" are now in the Hands of Dmitry
 */
 
 #include <TinyGPS++.h>
@@ -163,7 +163,7 @@ float readSpeed();  // read GPS speed
 int readRpm();         //read/calculate RPM and reset counters
 void rpmIntHandler();  //called by interupt, increments counters
 static void smartDelay(unsigned long ms);  //fuction reads temp/ voltage
-void isr ();       // encoder - Interrupt service routine is executed when a HIGH to LOW transition is detected on CLK
+void isr();       // encoder - Interrupt service routine is executed when a HIGH to LOW transition is detected on CLK
 void SpeedModeCalculations();
 void RPMModeCalculations();
 void MainDisplay();
@@ -172,6 +172,11 @@ void DebugOutput();
 
 int Kp=30, Kd=25, Ko=20;  //Ki=0,   //PID coefficients    //eeprom 
 long deltaD, deltaP;
+
+
+
+
+
 
 
  void setup()
@@ -253,7 +258,7 @@ void loop ()
   else { tachTimePrev = millis();}  //total time counter
   
   
- if (pos == maxServo)  //give out warnign to decrease throttle
+ if (pos == maxServo)  //give out warning to decrease throttle
   if (throttleCheck < millis())
   {
    throttleCheck = millis() + 2000;
@@ -434,8 +439,12 @@ static void smartDelay(unsigned long ms)
 
 
 
-
-
+//-------------------------------------------------------------------
+/* FUNCTION: readRPM()
+ * INPUT: duration | pulsecount
+ * RETURN:freqq
+ * DESCTRIPTION: Takes INPUTs and runs an equation to turn it into an RPM reading 
+ */
 int readRpm()
 {
     unsigned long _duration = duration;
@@ -448,8 +457,16 @@ int readRpm()
       //  Serial.print("freqq ");Serial.println(freqq);
     return(freqq); 
 }
+//End Function
+//-------------------------------------------------------------------
 
 
+//*******************************************************************
+/* FUNCTION: rpmIntHandler()
+ * INPUT: micros()
+ * RETURN: N/A
+ * DESCTRIPTION: it's a interrupt handler for RPMs need better knowledge for better description
+ */
 void rpmIntHandler() // interrupt handler
 {
   unsigned long currentMicros = micros();
@@ -457,8 +474,17 @@ void rpmIntHandler() // interrupt handler
   previousMicros = currentMicros;
   pulsecount++;
 }
+//End Function
+//-------------------------------------------------------------------
 
-void isr ()         // encoder - Interrupt service routine is executed when a HIGH to LOW transition is detected on CLK
+
+//*******************************************************************
+/* FUNCTION: rpmIntHandler()
+ * INPUT: micros()
+ * RETURN: incriments encoder up or down
+ * DESCTRIPTION: encoder - Interrupt service routine is executed when a HIGH to LOW transition is detected on CLK
+ */
+void isr()
 {
   if (digitalRead(PinCLK) == HIGH)
     {
@@ -472,18 +498,16 @@ void isr ()         // encoder - Interrupt service routine is executed when a HI
   TurnDetected = true;
    // Serial.println (encoder); 
 }
+//End Function
+//-------------------------------------------------------------------
 
 
-
-
-
-
-
-
-
-
-
-
+//*******************************************************************
+/* FUNCTION: SpeedModeCalculations()
+ * INPUT: Speed100 | speedBuffer 
+ * RETURN: pos
+ * DESCTRIPTION: Runs an equation to calculate Change in speed based off MPH | needs better description later
+ */
 void SpeedModeCalculations()
  {
   // checkSpeed = millis() + 1000;
@@ -507,20 +531,20 @@ void SpeedModeCalculations()
  pos100 = constrain(pos100,minServo*10,maxServo*10);
  pos = pos100/10;
 }  //end SPEED Mode 
+//End Function
+//-------------------------------------------------------------------
 
 
-
-
-
-
-
-
+//*******************************************************************
+/* FUNCTION: RPMModeCalculations()
+ * INPUT: Speed100 | speedBuffer 
+ * RETURN: pos
+ * DESCTRIPTION: Runs an equation to calculate Change in speed based off RPM | needs better description later
+ */
 void RPMModeCalculations()
 {
  // int rpmDelta = Speed100 - speedBuffer[3];
  //  SpeedCorrected = Speed100 + SpeedDelta;
-
-
  deltaD = avRPM - RPM;
      avRPM = 0;
      for (int i = 2; i>=0; i--) avRPM += rpmBuffer[i];          //calculate average RPM for i+1 steps
@@ -532,87 +556,96 @@ void RPMModeCalculations()
  pos100 += delta100;
  pos100 = constrain(pos100,minServo*10,maxServo*10);
    pos = pos100/10;
- ///  END OF RPM mode ////////////////////////////////////////////////////////////
 }
+//End Function
+//-------------------------------------------------------------------
 
 
-
-
-
-
-
-
-
-
-
-
+//*******************************************************************
+/* FUNCTION:  MainDisplay()
+ * INPUT: Everything that displays on the main screen 
+ * RETURN: OUtputs the main display
+ * DESCTRIPTION: This displays everything that you see
+ */
 void MainDisplay()
 {
-
-  //time output
-  hours = gps.time.hour() - hourOffset;
-  if (hours<0)
-    hours +=24;
-  minutes = gps.time.minute();
-  seconds = gps.time.second();
-  
+	//GPS Time Display//
+	hours = gps.time.hour() - hourOffset;
+	if (hours<0)
+		hours +=24;
+	minutes = gps.time.minute();
+	seconds = gps.time.second();
    mydisp.setFont(10);
    mydisp.setPrintPos(0, 1); 
    mydisp.print(hours); mydisp.print(":"); if (minutes<10) mydisp.print("0"); mydisp.print(minutes);mydisp.print(":"); if (seconds<10) mydisp.print("0"); mydisp.print(seconds);mydisp.print("            ");
 
-
+	//Blank SPace?//
   mydisp.setFont(10);
    mydisp.setPrintPos(10, 2);  
    mydisp.setTextPosOffset(0,-6); 
       mydisp.setFont(6);
-
+	
+	//print word "GPS"//
    mydisp.setFont(10);  
    mydisp.setPrintPos(18, 3);   
    mydisp.setTextPosOffset(2,-2);   
    mydisp.print("GPS");
+   
+	//Print word "MPH" or "KPH"//
    mydisp.setPrintPos(18, 4);   
    mydisp.setTextPosOffset(2,-3);      
    if (mph) mydisp.print("MPH"); else mydisp.print("KPH");
   
+	//Print word "POWER"//
    mydisp.setPrintPos(0, 0); 
-   mydisp.print("POWER ");     
+   mydisp.print("POWER ");  
+   
+	//Print word "MIN" or "FULL" or "  "//
    if (pos == maxServo)  mydisp.print("MIN "); 
    else  if (pos == minServo)  mydisp.print("FULL "); 
    else  mydisp.print(maxServo/10 - pos/10);    
    mydisp.print("  "); 
       
-  
-   mydisp.setFont(18);
-   mydisp.setPrintPos(7, 0);
-   if (mode == 0) mydisp.print("  OFF  ");
-   if (mode == 1) { mydisp.print(targetRPM);  mydisp.print("RPM"); }
-   if (mode == 2) {  mydisp.print(TargetSpeedInt/10);   mydisp.print(".");   mydisp.print(TargetSpeedInt%10);   
-     if (mph) mydisp.print("MPH"); else mydisp.print("KPH");   } 
+	//Print word depending on mode selection//
+	// 0 Prints "OFF"
+	// 1 Prints TargetRPM & "RPM"
+	// 2 Prints TargetSpeedInt/10 & TargetSpeedInt%10 & either "MPH" or "KPH"
+	mydisp.setFont(18);
+	mydisp.setPrintPos(7, 0);
+	if (mode == 0) mydisp.print("  OFF  ");
+	if (mode == 1) { mydisp.print(targetRPM);  mydisp.print("RPM"); }
+	if (mode == 2) {  mydisp.print(TargetSpeedInt/10);   mydisp.print(".");   mydisp.print(TargetSpeedInt%10);   
+	if (mph) mydisp.print("MPH"); else mydisp.print("KPH");   } 
    
-
+	//Prints Voltage
    mydisp.setFont(10);   
    mydisp.setPrintPos(0, 2); 
    mydisp.print("V ");  mydisp.print(voltage); mydisp.print("  ");
   
-  /* mydisp.setPrintPos(0, 3); 
-   mydisp.print("UNT "); mydisp.print(Temp); if (celsius) mydisp.print("c "); else mydisp.print("F ");
-   */
-   
+	// Prints Water Temp and Air Temp 
+												  /* mydisp.setPrintPos(0, 3); 
+												   mydisp.print("UNT "); mydisp.print(Temp); if (celsius) mydisp.print("c "); else mydisp.print("F ");
+												   */
    mydisp.setPrintPos(0, 4);  
    mydisp.print("WTR "); mydisp.print(wtrTemp); if (celsius)  mydisp.print("c  ");else mydisp.print("F ");
    mydisp.setPrintPos(0, 5); 
    mydisp.print("AIR "); mydisp.print(airTemp); if (celsius)  mydisp.print("c  ");else mydisp.print("F ");
+   
+   //Prints current RPM reading
    mydisp.setPrintPos(0, 6); 
    mydisp.print("RPM "); mydisp.print(RPM); mydisp.print("    ");
-  
-  //Main speed output   
-    //mydisp.setFont(123);      
-    mydisp.setPrintPos(0, 0); 
-  //  
+ 
 
-mydisp.setFont(203);  
-mydisp.setPrintPos(0, 0); 
-mydisp.setTextPosOffset(46,22);   //main speed
+												/*NOT SURE WHAT THIS WAS FOR 
+												  //Main speed output   
+													//mydisp.setFont(123);      
+													mydisp.setPrintPos(0, 0); 
+												  //  
+												*/
+	//Prints the Main Speed value On Display
+	mydisp.setFont(203);  
+	mydisp.setPrintPos(0, 0); 
+	mydisp.setTextPosOffset(46,22);
 
     if (speedValue<100) mydisp.print('0'); 
     mydisp.print(speedValue/10);  
@@ -625,14 +658,8 @@ mydisp.setTextPosOffset(46,22);   //main speed
 
 
 }    
-//end MAIN display section
-
-
-
-
-
-
-
+//End Function
+//-------------------------------------------------------------------
 
 
 void Menu()
