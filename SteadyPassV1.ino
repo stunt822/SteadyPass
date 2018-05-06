@@ -12,8 +12,8 @@
   ---|
   ---|
   ---|Change History:
-  ---|
-  ---|	16.54	- Sam - Renamed File from "Limiter_16_53.ino", Added Title and Change History, Added Function comment and Descriptions, All previous Versions named "Limiter_xx_xx" are now in the Hands of Dmitry
+  ---|  <16.53 - Dimitry - Allversion Prior to 17.00 have been soley created by Dimitry
+  ---|	17.00	- Sam James - Renamed File from "Limiter_16_53.ino", Added Title and Change History, Added Function comment and Descriptions, Minor code changes made that will not effect the main code.
 */
 
 
@@ -115,10 +115,10 @@ int avRPM;
 static long virtualPosition = 0;
 boolean Reverse = false;
 Servo myservo;
-                      //int minServo = 50;
-                      //int maxServo = 138;   //Linear
-                      //  int minServo = 54;
-                      // int maxServo = 100;
+//int minServo = 50;
+//int maxServo = 138;   //Linear
+//int minServo = 54;
+// int maxServo = 100;
 int minServo = 1050;
 int maxServo = 1950;
 
@@ -173,7 +173,7 @@ long deltaD, deltaP;
 //************************************************************************************************|
 void setup()
 {
-  Serial.begin(9600);
+ if(debug)Serial.begin(9600);
   Serial1.begin(9600);   //GPS device
   delay (2000);
   //digole LCD init section with name and version
@@ -198,7 +198,7 @@ void setup()
   myservo.writeMicroseconds(pos);
 
 
-  //******************LOADING SAVED VALUES*******************
+  //******************LOADING SAVED SETTINGS*******************
   if (EEPROM.read(11) != 255) cylCoeff = EEPROM.read(11);
   if (EEPROM.read(12) != 255) Kp =  EEPROM.read(12);
   if (EEPROM.read(13) != 255) Kd = EEPROM.read(13);
@@ -219,8 +219,7 @@ void setup()
   //----------------GPS CONFIGURATION COMPLETE-------------------
 
 
- Serial.println("SETUP COMPLETE");
-}
+  if(debug){Serial.println("SETUP COMPLETE");}
 
 //================================================================================================|
 //------------------------------------ STARTUP COMPLETE ------------------------------------------|
@@ -244,7 +243,9 @@ void loop ()
   { digitalWrite(13, HIGH);
     led = true;
   }
-  smartDelay(1);              //read GPS
+
+
+  smartDelay(1);//ACQUIRING GPS SIGNAL
   if (gps.speed.isValid())
   {
     speedGpsD = gps.speed.mph();
@@ -255,7 +256,8 @@ void loop ()
     //possible enhancment to switch to RPM calculation if GPS signal lost for extended time.
   }
   Speed100 = 100 * speedGpsD;
-  Serial.print("Speed 100: ");   Serial.println(Speed100);
+  if(debug){Serial.print("Speed 100: "); Serial.println(Speed100);}
+  
   RPM = readRpm();
   
   //Get Total Run time since powerup//
@@ -282,7 +284,9 @@ void loop ()
         mydisp.print(" ! THROTTLE !     ");
         smartDelay(1);
         if (gps.speed.isValid())
+        {
           speedGpsD = gps.speed.mph();
+        }
         Speed100 = 100 * speedGpsD;
         mydisp.setPrintPos(0, 0);
         mydisp.print("                  ");
@@ -363,52 +367,38 @@ void loop ()
   while (buttonTimes > buttonTarget)      Menu();     //menu will loop untill buttonTimes is set to 0
 
 
-  //screensaver section
-  if (RPM < 50) idleCounter++; else {
-    idleCounter = 0;
-  }
+  //SCREEN SAVER ACTIVATION PARAMETERS
+  // if (RPM < 50) idleCounter++; else {
+  //   idleCounter = 0;
+  // }
 
-  if ((idleCounter > idleLimit) && mainDisplay)
-  { //screensaver_temporarily_disabled    mainDisplay = false; mydisp.clearScreen();   //
-  }
+  // if ((idleCounter > idleLimit) && mainDisplay)
+  // { 
+  //   //screensaver_temporarily_disabled    mainDisplay = false; mydisp.clearScreen();   //
+  // }
+  // if (!mainDisplay)    
+  // {
+  //   mydisp.setFont(120);
+  //   mydisp.setPrintPos(0, 0);
+  //   mydisp.setTextPosOffset(20, 15);
+  //   mydisp.print(hours); mydisp.print(":"); if (minutes < 10) mydisp.print("0"); mydisp.print(minutes); mydisp.print("  ");
+  //   mydisp.setFont(6);
+  //   mydisp.setPrintPos(0, 2);
+  //   mydisp.setTextPosOffset(0, 0);
+  //   mydisp.setFont(10);
+  //   mydisp.setPrintPos(0, 0);
+  //   mydisp.print("Tach today "); mydisp.print(tachTime / 60000); mydisp.println(" min");
+  //   delay(20);
+  //   mydisp.setPrintPos(0, 6); mydisp.print("UNT "); mydisp.print(Temp); if (celsius) mydisp.print("c"); else mydisp.print("F"); mydisp.print(" Batt "); mydisp.print(voltage); mydisp.print("v ");
+  //   mydisp.setPrintPos(0, 5); mydisp.print("WTR "); mydisp.print(wtrTemp); if (celsius) mydisp.print("c"); else mydisp.print("F");  mydisp.print(" AIR "); mydisp.print(airTemp); if (celsius) mydisp.print("c "); else mydisp.print("F ");
+  //   if (RPM > 500)
+  //   {
+  //     idleCounter = 0;
+  //     mainDisplay = true;
+  //     mydisp.clearScreen();
+  //   }
 
-
-  if (!mainDisplay)     //Screensaver page
-  {
-
-
-    mydisp.setFont(120);
-    mydisp.setPrintPos(0, 0);
-    mydisp.setTextPosOffset(20, 15);
-    mydisp.print(hours); mydisp.print(":"); if (minutes < 10) mydisp.print("0"); mydisp.print(minutes); mydisp.print("  ");
-
-    mydisp.setFont(6);
-    mydisp.setPrintPos(0, 2);
-    mydisp.setTextPosOffset(0, 0);
-
-
-    mydisp.setFont(10);
-    mydisp.setPrintPos(0, 0);
-    mydisp.print("Tach today "); mydisp.print(tachTime / 60000); mydisp.println(" min");
-    delay(20);
-
-    mydisp.setPrintPos(0, 6); mydisp.print("UNT "); mydisp.print(Temp); if (celsius) mydisp.print("c"); else mydisp.print("F"); mydisp.print(" Batt "); mydisp.print(voltage); mydisp.print("v ");
-
-      mydisp.setPrintPos(0, 5); mydisp.print("WTR "); mydisp.print(wtrTemp); if (celsius) mydisp.print("c"); else mydisp.print("F");  mydisp.print(" AIR "); mydisp.print(airTemp); if (celsius) mydisp.print("c "); else mydisp.print("F ");
-
-
-
-
-
-  //delay(100);
-
-  if (RPM > 500)  {
-    idleCounter = 0;
-    mainDisplay = true;
-    mydisp.clearScreen();
-  }
-
-}   //end screen saver
+  //}   //end screen saver
 
 /*
   //tweak on the fly  - for tuning from PC
@@ -445,6 +435,15 @@ void loop ()
 //================================================================================================|
 
 
+
+
+
+//*******************************************************************
+/* FUNCTION: smartDelay()
+   INPUT: N/A
+   RETURN: N/A
+   DESCTRIPTION: Reads Data from GPS device, Loops whiles data is transfering over Serial, ends loop once data is read.
+*/
 static void smartDelay(unsigned long ms)
 {
   unsigned long start = millis();
@@ -457,14 +456,11 @@ static void smartDelay(unsigned long ms)
   }
   while ( !(gps.speed.isUpdated())  );                  //while (millis() - start < ms);
 }
-
-
-
-
-
-
-
+//End Function
 //-------------------------------------------------------------------
+
+
+//*******************************************************************
 /* FUNCTION: readRPM()
    INPUT: duration | pulsecount
    RETURN:freqq
