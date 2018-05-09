@@ -3,8 +3,8 @@
   /   _____//  |_  ____ _____     __| _/__.__. \______   \_____    ______ ______ \   \ /   /_   |
   \_____  \\   __\/ __ \\__  \   / __ <   |  |  |     ___/\__  \  /  ___//  ___/  \       / |   |
   /        \|  | \  ___/ / __ \_/ /_/ |\___  |  |    |     / __ \_\___ \ \___ \    \     /  |   |
- /_______  /|__|  \___  >____  /\____ |/ ____|  |____|    /____  /____  >____  >    \___/   |___|
-================================================================================================
+  /_______  /|__|  \___  >____  /\____ |/ ____|  |____|    /____  /____  >____  >    \___/   |___|
+  ================================================================================================
 ************************************************************************************************
   ---|FILE: SteadyPassV1.ino
   ---|Created By: Dimitry
@@ -30,6 +30,16 @@
 //*************INITIALIZING DEFINITIONS*************
 double Setpoint, Input, Output;
 //Default PROPORTION ON MEASURE MODE//
+//boolean adaptiveTuningMode = false;
+//PID myPID(&Input, &Output, &Setpoint,2,5,1,P_ON_M, DIRECT);
+//------------------------------------------------------------
+//ADAPTIVE TUNING MODE//
+boolean adaptiveTuningMode = true;
+double aggKp = 30, aggKi = 0.2, aggKd = 25; //NEED TO MAKE MENU OPTION FOR ADJUSTMENTS ON THE FLY
+double consKp = 15, consKi = 0.1, consKd = 12.5; //NEED TO MAKE MENU OPTION FOR ADJUSTMENTS ON THE FLY
+PID myPID(&Input, &Output, &Setpoint, consKp, consKi, consKd, DIRECT);
+//--------------------------------------------------------------------
+//Default PROPORTION ON MEASURE MODE//
 //PID myPID(&Input, &Output, &Setpoint,2,5,1,P_ON_M, DIRECT);
 //ADAPTIVE TUNING MODE//
 double aggKp=30, aggKi=0.2, aggKd=25;       //NEED TO MAKE MENU OPTION FOR ADJUSTMENTS ON THE FLY
@@ -47,26 +57,26 @@ int cylCoeff = 4;                               //Number of Cylinders
 boolean gpsMode = true;                         //GPS mode (true) or RPM mode (false)
 int mode = 0;                                   //Calculations mode 0=off 1=RPM 2=MPH/KPH
 int DisplayMode = 0;                            //display mode
-//--------------------------------------------------
+//------------------------------------------------------------
 
 
 //*************PIN CONFIGURATION*************
-                                  //0 and 1 = GPS  , int 2 and 3
+//0 and 1 = GPS  , int 2 and 3
 const int PinCLK = 2;             //int 1 == pin 2 encoder second pin
 const int PinDT = 3;              //int0 == pin3    // Used for reading DT signal of encoder
 const int PinSW = 4;              //encoder button
 const int servoPin = 5;           //servo PWM connected here
 const int speedPin = 6;           //reserve    int4 == pin 7? speed sensor
 const int rpmPin = 7;             //Engine currentRPM input connected here
-                                  //8 and 9 - LCD, defined above
-                                  //open - 10 - LCD SS?
+//8 and 9 - LCD, defined above
+//open - 10 - LCD SS?
 const int tempWtrPin = 11;        //temperature water
 const int tempAirPin = 12;        //temperature air
 const int voltPin = A0;           //battery voltage divider
-                                  //OPEN A1, A2, A3 - relay out?
+//OPEN A1, A2, A3 - relay out?
 const int tempBoardPin = A4;      //temperature on control board
 const int lightsPin = A5;         //A5;  // lights on voltage divider
-//-------------------------------------------
+//-------------------------------------------------------------------
 
 
 //*************TEMP SENSOR INITIALIZATION*************
@@ -151,7 +161,6 @@ boolean mainDisplay = true;
 boolean modeOn = true;
 volatile long encoder = 0;
 int hours, minutes, seconds, hourOffset = 7;
-boolean rpmMode = false;
 boolean speedMode = true;
 //-----------------END ENCODER--------------------
 
@@ -173,7 +182,7 @@ void DebugOutput();                         //Outputs addition information by Se
 //************************************************************************************************|
 void setup()
 {
-  if(debug)Serial.begin(9600);
+  if (debug)Serial.begin(9600);
   Serial1.begin(9600);   //GPS device
   delay (2000);
   //digole LCD init section with name and version
@@ -195,8 +204,8 @@ void setup()
   attachInterrupt(4, rpmIntHandler, CHANGE);  //  RPM - pin 7 is gronded on pulse
   myservo.attach(servoPin);                   // attaches the servo on pin  to the servo object
   myservo.writeMicroseconds(pos);
-  
-  
+
+
   //PID Variables//
   Input = Speed100;
   Setpoint = Target100;
@@ -224,7 +233,10 @@ void setup()
   Serial1.println("$PMTK314,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*29");     //Sets GPS to RMC only
   Serial1.println("$PMTK220,200*2C");  //Set GPS to 5hz
   //----------------GPS CONFIGURATION COMPLETE-------------------
-  if(debug){Serial.println("SETUP COMPLETE");}
+
+  if (debug) {
+    Serial.println("SETUP COMPLETE");
+  }
 }
 
 //================================================================================================|
@@ -242,12 +254,12 @@ void setup()
 void loop ()
 {
   if (led)
-  { 
+  {
     digitalWrite(13, LOW);
     led = false;
   }
   else
-  { 
+  {
     digitalWrite(13, HIGH);
     led = true;
   }
@@ -263,48 +275,51 @@ void loop ()
     //possible enhancment to switch to RPM calculation if GPS signal lost for extended time.
   }
   Speed100 = 100 * speedGpsD;
-  if(debug){Serial.print("Speed 100: "); Serial.println(Speed100);}
-  
+  if (debug) {
+    Serial.print("Speed 100: ");
+    Serial.println(Speed100);
+  }
+
   currentRPM = readRpm();
-  
+
   //Get Total Run time since powerup//
-  if (currentRPM > 50) 
+  if (currentRPM > 50)
   {
     tachTime += millis() - tachTimePrev;
     tachTimePrev = millis();
   }
-  else 
+  else
   {
     tachTimePrev = millis();
   }
 
   //THROTTLE OVER LIMIT warning//
   if (pos == maxServo)
-    {          
-      if (throttleCheck < millis())
+  {
+    if (throttleCheck < millis())
+    {
+      throttleCheck = millis() + 2000;
+      mydisp.setFont(18);
+      mydisp.setPrintPos(0, 0);
+      mydisp.print(" ! DECREASE !     ");
+      mydisp.setPrintPos(0, 1);
+      mydisp.print(" ! THROTTLE !     ");
+      smartDelay(1);
+      if (gps.speed.isValid())
       {
-        throttleCheck = millis() + 2000;
-        mydisp.setFont(18);
-        mydisp.setPrintPos(0, 0);
-        mydisp.print(" ! DECREASE !     ");
-        mydisp.setPrintPos(0, 1);
-        mydisp.print(" ! THROTTLE !     ");
-        smartDelay(1);
-        if (gps.speed.isValid())
-        {
-          speedGpsD = gps.speed.mph();
-        }
-        Speed100 = 100 * speedGpsD;
-        mydisp.setPrintPos(0, 0);
-        mydisp.print("                  ");
-        mydisp.setPrintPos(0, 1);
-        mydisp.print("                  ");
+        speedGpsD = gps.speed.mph();
       }
+      Speed100 = 100 * speedGpsD;
+      mydisp.setPrintPos(0, 0);
+      mydisp.print("                  ");
+      mydisp.setPrintPos(0, 1);
+      mydisp.print("                  ");
     }
+  }
 
 
   //STORE LAST 10 GPS SPEEDS//
-  for (int i = 10; i > 0; i--)  
+  for (int i = 10; i > 0; i--)
   {
     speedBuffer[i] = speedBuffer[i - 1];
     speedBuffer[0] = Speed100;
@@ -319,8 +334,8 @@ void loop ()
   //SOTRE LAST 10 currentRPM VALUES
   for (int i = 10; i > 0; i--)
   {
-  rpmBuffer[i] = rpmBuffer[i - 1];
-  rpmBuffer[0] = currentRPM;
+    rpmBuffer[i] = rpmBuffer[i - 1];
+    rpmBuffer[0] = currentRPM;
   }
 
   //RUN CURRENT CALCULATION MODE//
@@ -330,15 +345,13 @@ void loop ()
   }
   else
   {
-    if (mode == 1)  
+    if (mode == 1)
     {
       speedMode = false;
-      rpmMode = true;
     }
     else
     {
       speedMode = true;
-      rpmMode = false;
     }
     PIDCalculations();
   }
@@ -394,64 +407,64 @@ void loop ()
   }
 
   if ((idleCounter > idleLimit) && mainDisplay)
-  { 
-    mainDisplay = false; 
+  {
+    mainDisplay = false;
     mydisp.clearScreen();
   }
-  if (!mainDisplay)    
+  if (!mainDisplay)
   {
     mydisp.setFont(120);
     mydisp.setPrintPos(0, 0);
     mydisp.setTextPosOffset(20, 15);
-    mydisp.print(hours); 
-    mydisp.print(":"); 
-    if (minutes < 10) 
+    mydisp.print(hours);
+    mydisp.print(":");
+    if (minutes < 10)
     {
       mydisp.print("0");
-    } 
-    mydisp.print(minutes); 
+    }
+    mydisp.print(minutes);
     mydisp.print("  ");
     mydisp.setFont(6);
     mydisp.setPrintPos(0, 2);
     mydisp.setTextPosOffset(0, 0);
     mydisp.setFont(10);
     mydisp.setPrintPos(0, 0);
-    mydisp.print("Tach today "); 
-    mydisp.print(tachTime / 60000); 
+    mydisp.print("Tach today ");
+    mydisp.print(tachTime / 60000);
     mydisp.println(" min");
     delay(20);
-    mydisp.setPrintPos(0, 6); 
-    mydisp.print("UNT "); 
-    mydisp.print(Temp); 
-    if (celsius) 
+    mydisp.setPrintPos(0, 6);
+    mydisp.print("UNT ");
+    mydisp.print(Temp);
+    if (celsius)
     {
-      mydisp.print("c"); 
+      mydisp.print("c");
     }
-    else 
+    else
     {
-      mydisp.print("F"); 
+      mydisp.print("F");
     }
-    mydisp.print(" Batt "); 
-    mydisp.print(voltage); 
+    mydisp.print(" Batt ");
+    mydisp.print(voltage);
     mydisp.print("v ");
-    mydisp.setPrintPos(0, 5); 
-    mydisp.print("WTR "); 
-    mydisp.print(wtrTemp); 
-    if (celsius) 
+    mydisp.setPrintPos(0, 5);
+    mydisp.print("WTR ");
+    mydisp.print(wtrTemp);
+    if (celsius)
     {
-      mydisp.print("c"); 
+      mydisp.print("c");
     }
-    else 
+    else
     {
-      mydisp.print("F");  
+      mydisp.print("F");
     }
-    mydisp.print(" AIR "); 
-    mydisp.print(airTemp); 
-    if (celsius) 
+    mydisp.print(" AIR ");
+    mydisp.print(airTemp);
+    if (celsius)
     {
-      mydisp.print("c "); 
+      mydisp.print("c ");
     }
-    else 
+    else
     {
       mydisp.print("F ");
     }
@@ -463,39 +476,39 @@ void loop ()
       mydisp.clearScreen();
     }
 
-  }   
+  }
   //SCREEN SAVER END
 
-/*
-  //tweak on the fly  - for tuning from PC
-    if(Serial.available())
-  {
-   char b = Serial.read();
-   Serial.flush();
+  /*
+    //tweak on the fly  - for tuning from PC
+      if(Serial.available())
+    {
+     char b = Serial.read();
+     Serial.flush();
 
-    if((b=='w'))  Target100 += 100;
-    if((b=='s'))  Target100 -= 100;
-    if((b=='e'))  Kd += 1;
-    if((b=='d'))  Kd -= 1;
-    if((b=='p'))  Kp += 1;
-    if((b==';'))  Kp -= 1;
-    if((b=='o'))  Ko += 1;
-    if((b=='l'))  Ko -= 1;
-    if((b=='r'))  targetRPM += 10;
-    if((b=='f'))  targetRPM -= 10;
-    if((b=='g'))  {gpsMode =!gpsMode;  targetRPM = currentRPM;}
+      if((b=='w'))  Target100 += 100;
+      if((b=='s'))  Target100 -= 100;
+      if((b=='e'))  Kd += 1;
+      if((b=='d'))  Kd -= 1;
+      if((b=='p'))  Kp += 1;
+      if((b==';'))  Kp -= 1;
+      if((b=='o'))  Ko += 1;
+      if((b=='l'))  Ko -= 1;
+      if((b=='r'))  targetRPM += 10;
+      if((b=='f'))  targetRPM -= 10;
+      if((b=='g'))  {gpsMode =!gpsMode;  targetRPM = currentRPM;}
 
-  }*/
+    }*/
 
-//  Serial.print("Tgt: ");Serial.print(Target100); Serial.print(" ");
-//  Serial.print("Sp: ");Serial.print(Speed100); Serial.print(" ");
-//  Serial.print("Sp_Cor: ");Serial.print(SpeedCorrected); Serial.print(" ");
-//  Serial.print("Srv: ");Serial.print(180-pos); Serial.print(" ");
+  //  Serial.print("Tgt: ");Serial.print(Target100); Serial.print(" ");
+  //  Serial.print("Sp: ");Serial.print(Speed100); Serial.print(" ");
+  //  Serial.print("Sp_Cor: ");Serial.print(SpeedCorrected); Serial.print(" ");
+  //  Serial.print("Srv: ");Serial.print(180-pos); Serial.print(" ");
 
-//  Serial.print("Kp: ");Serial.print(Kp);Serial.print(" ");
-//  Serial.print("Kd: ");Serial.print(Kd);Serial.print(" ");
-//  Serial.print("Ko: ");Serial.print(Ko);Serial.println();
-} 
+  //  Serial.print("Kp: ");Serial.print(Kp);Serial.print(" ");
+  //  Serial.print("Kd: ");Serial.print(Kd);Serial.print(" ");
+  //  Serial.print("Ko: ");Serial.print(Ko);Serial.println();
+}
 //================================================================================================|
 //-------------------------------------------MAIN END---------------------------------------------|
 //================================================================================================|
@@ -517,7 +530,7 @@ static void smartDelay(unsigned long ms)
   {
     while (Serial1.available())
     {
-      gps.encode(Serial1.read());   ;
+      gps.encode(Serial1.read());
     }
   }
   while ( !(gps.speed.isUpdated())  );                  //while (millis() - start < ms);
@@ -541,7 +554,7 @@ int readRpm()
   long freqq = 60 * 1e5 * _pulsecount / _duration / cylCoeff;
   freqq *= 10;
 
-  if(debug)Serial.print("freqq ");Serial.println(freqq);
+  if (debug)Serial.print("freqq "); Serial.println(freqq);
   return (freqq);
 }
 //End Function
@@ -584,7 +597,7 @@ void isr()
     encoder++;
   }
   TurnDetected = true;
-  if(debug)Serial.println (encoder);
+  if (debug)Serial.println (encoder);
 }
 //End Function
 //-------------------------------------------------------------------
@@ -599,23 +612,23 @@ void isr()
 void PIDCalculations()
 {
   //PID INPUTS//
-  if (rpmmode)
-  {
-    Input = currentRPM;
-    Setpoint = targetRPM;
-  }
-  else
+  if (speedMode)
   {
     Input = Speed100;
     Setpoint = Target100;
+  }
+  else
+  {
+    Input = currentRPM;
+    Setpoint = targetRPM;
   }
 
   //ADAPTIVE TUNING CALULATIONS//
   if (adaptiveTuningMode)
   {
-    double gap = abs(Setpoint-Input); //distance away from setpoint
+    double gap = abs(Setpoint - Input); //distance away from setpoint
     if (gap < 10)
-    {  //we're close to setpoint, use conservative tuning parameters
+    { //we're close to setpoint, use conservative tuning parameters
       myPID.SetTunings(consKp, consKi, consKd);
     }
     else
@@ -626,14 +639,14 @@ void PIDCalculations()
     myPID.Compute();
     pos100 = Output;
   }
-  //PROPORTION ON MEASURE MODE// 
+  //PROPORTION ON MEASURE MODE//
   // else
   // {
   //   myPID.Compute();
   //   pos100 = Output;
   // }
- //----------------------------
 
+  //----------------------------
   pos100 = constrain(pos100, minServo * 10, maxServo * 10);
   pos = pos100 / 10;
 }
@@ -641,7 +654,7 @@ void PIDCalculations()
 //-------------------------------------------------------------------
 
 
- 
+
 
 //*******************************************************************
 /* FUNCTION:  MainDisplay()
@@ -720,7 +733,7 @@ void MainDisplay()
 
   //Prints currentcurrentRPM reading
   mydisp.setPrintPos(0, 6);
-  mydisp.print("RPM "); mydisp.print(RPM); mydisp.print("    ");
+  mydisp.print("RPM "); mydisp.print(currentRPM); mydisp.print("    ");
 
 
   /*NOT SURE WHAT THIS WAS FOR
@@ -801,12 +814,10 @@ void Menu()
   delay(10);
   //  if (menuItem == 6) menuItem ++;
 
-
   mydisp.setPrintPos(0, 8);
   if (menuItem == 7) mydisp.print(">>");
   //mydisp.print("Ovrst ");  mydisp.print(Kd);   mydisp.print("    ");
   delay(10);
-
 
   mydisp.setPrintPos(0, 9);
   if (menuItem == 8) mydisp.print(">>");
@@ -818,7 +829,6 @@ void Menu()
   mydisp.print("DFT SP ");   mydisp.print(Target100 / 100);
   mydisp.print("  ");
   delay(10);
-
 
   mydisp.setPrintPos(17, 6);
   if (menuItem == 10) mydisp.print(">> ");
@@ -845,72 +855,107 @@ void Menu()
 
   if (TurnDetected)
   { // do this only if rotation was detected
-    if ((millis() - prevtime) > threshold) 
+    if ((millis() - prevtime) > threshold)
     {
       prevtime = millis();
-      if (up == prev_up) 
+      if (up == prev_up)
       {
         if (up)
         {
-          if (menuItem == 1) if (Reverse) {minServo -= 10; else maxServo -= 10;}
-          if (menuItem == 2) if (Reverse) {maxServo -= 10; else minServo -= 10;}
-          //if (menuItem == 3)
-          if (menuItem == 4) cylCoeff--;
-          if (menuItem == 5) hourOffset -= 1;
-          if (menuItem == 6) Reverse = !Reverse;
-          //if (menuItem == 7) Kd -= 1;
-          //if (menuItem == 8)  Ko -= 1;
-          if (menuItem == 9)  Target100 -= 100;
-          if (menuItem == 10) mph = !mph;
-          if (menuItem == 11) celsius = !celsius;
-          if (menuItem == 12) debug = !debug;
+          if (menuItem == 1)
+            if (Reverse)
+            {
+              minServo -= 10;
+            }
+            else
+            {
+              maxServo -= 10;
+            }
+          if (menuItem == 2)
+          {
+            if (Reverse)
+            {
+              maxServo -= 10;
+            }
+            else
+            {
+              minServo -= 10;
+            }
+            //if (menuItem == 3)
+            if (menuItem == 4) cylCoeff--;
+            if (menuItem == 5) hourOffset -= 1;
+            if (menuItem == 6) Reverse = !Reverse;
+            //if (menuItem == 7) Kd -= 1;
+            //if (menuItem == 8)  Ko -= 1;
+            if (menuItem == 9)  Target100 -= 100;
+            if (menuItem == 10) mph = !mph;
+            if (menuItem == 11) celsius = !celsius;
+            if (menuItem == 12) debug = !debug;
 
+          }
+          else
+          {
+            if (menuItem == 1)
+              if (Reverse)
+              {
+                minServo += 10;
+              }
+              else
+              {
+                maxServo += 10;
+              }
+            if (menuItem == 2)
+              if (Reverse)
+              {
+                maxServo += 10;
+              }
+              else
+              {
+                minServo += 10;
+              }
+            //if (menuItem == 3)
+            if (menuItem == 4) cylCoeff++;
+            if (menuItem == 5) hourOffset += 1;
+            if (menuItem == 6) Reverse = !Reverse;
+            //if (menuItem == 7) Kd += 1;
+            //if (menuItem == 8) Ko += 1;
+            if (menuItem == 9)  Target100 += 100;
+            if (menuItem == 10) mph = !mph;
+            if (menuItem == 11) celsius = !celsius;
+            if (menuItem == 12) debug = !debug;
+          }
         }
         else
         {
-          if (menuItem == 1) if (Reverse) {minServo += 10; else maxServo += 10;}
-          if (menuItem == 2) if (Reverse) {maxServo += 10; else minServo += 10;}
-          //if (menuItem == 3)
-          if (menuItem == 4) cylCoeff++;
-          if (menuItem == 5) hourOffset += 1;
-          if (menuItem == 6) Reverse = !Reverse;
-          //if (menuItem == 7) Kd += 1;
-          //if (menuItem == 8) Ko += 1;
-          if (menuItem == 9)  Target100 += 100;
-          if (menuItem == 10) mph = !mph;
-          if (menuItem == 11) celsius = !celsius;
-          if (menuItem == 12) debug = !debug;
+          prev_up = up;
         }
-      } 
-      else 
-      {
-        prev_up = up;
+        TurnDetected = false;          // do NOT repeat IF_loop until new rotation detected
       }
-      TurnDetected = false;          // do NOT repeat IF_loop until new rotation detected
     }
-  }
 
-  if (digitalRead(PinSW) == LOW)  //menu scroll
-  {
-    delay(250);
-      if (digitalRead(PinSW) == HIGH)   if (menuItem > 11) menuItem = 1; else menuItem++;
-    buttonTimes2++;
-  }
-  else {
-    buttonTimes2 = 0;
-  }
+    if (digitalRead(PinSW) == LOW)  //menu scroll
+    {
+      delay(250);
+        if (digitalRead(PinSW) == HIGH)   if (menuItem > 11) menuItem = 1; else menuItem++;
+      buttonTimes2++;
+    }
+    else {
+      buttonTimes2 = 0;
+    }
 
-  if (buttonTimes2 > 4)
-  { buttonTimes = 0;  buttonTimes2 = 0;  menuItem = 1;  mydisp.clearScreen();    //exit procedure begin
+    if (buttonTimes2 > 4)
+    {
+      buttonTimes = 0;  buttonTimes2 = 0;  menuItem = 1;  mydisp.clearScreen();
+    }    //exit procedure begin
 
     if (EEPROM.read(11) != cylCoeff)
       EEPROM.write(11, cylCoeff);
     //if (EEPROM.read(12) != Kp      )
-      //EEPROM.write(12, Kp);
+    //EEPROM.write(12, Kp);
     //if (EEPROM.read(13) != Kd      )
-      //EEPROM.write(13, Kd);
+    //EEPROM.write(13, Kd);
     //if (EEPROM.read(14) != Ko      )
-      //EEPROM.write(14, Ko);
+    //EEPROM.write(14, Ko);
     if (EEPROM.read(15) != 24 - hourOffset)
       EEPROM.write(15, (24 - hourOffset));
     if (EEPROM.read(16) != maxServo / 10 )
@@ -938,7 +983,7 @@ void DebugOutput()
   Serial.print("Time: ");   Serial.print(millis());
   Serial.print(" GPS_Sp: ");  Serial.print(Speed100);
   Serial.print(" Sp_Targ100: ");  Serial.print(Target100);
-  Serial.print("currentRPM: "); Serial.print(RPM);
+  Serial.print("currentRPM: "); Serial.print(currentRPM);
   Serial.print(" RPM_target: "); Serial.print(targetRPM);
   Serial.print(" Srv: "); Serial.println(pos);
 }
