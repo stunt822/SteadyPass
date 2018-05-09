@@ -28,23 +28,14 @@
 //----------------------------------
 
 //*************INITIALIZING DEFINITIONS*************
-//PID Definitions//
 double Setpoint, Input, Output;
-
+//Default PROPORTION ON MEASURE MODE//
+//PID myPID(&Input, &Output, &Setpoint,2,5,1,P_ON_M, DIRECT);
 //ADAPTIVE TUNING MODE//
-if (EEPROM.read(19) == 1)
-{
 double aggKp=30, aggKi=0.2, aggKd=25;       //NEED TO MAKE MENU OPTION FOR ADJUSTMENTS ON THE FLY
 double consKp=15, consKi=0.1, consKd=12.5;  //NEED TO MAKE MENU OPTION FOR ADJUSTMENTS ON THE FLY
 PID myPID(&Input, &Output, &Setpoint, consKp, consKi, consKd, DIRECT);
-}
-//PROPORTION ON MEASURE MODE//
-else
-{
-PID myPID(&Input, &Output, &Setpoint,2,5,1,P_ON_M, DIRECT);
-}
 //----------------------------------
-
 float fltCurrentVersion = 17.00;
 TinyGPSPlus gps;                                //required for TinyGPSplus Library
 DigoleSerialDisp mydisp(9, 8, 10);              //Pin Config SPI | 9: data | 8:clock | 10: SS | you can assign 255 to SS, and hard ground SS pin on module
@@ -158,10 +149,10 @@ int menuItem = 1;
 int idleCounter = 0, idleLimit = 2500;
 boolean mainDisplay = true;
 boolean modeOn = true;
-boolean rpmMode
-boolean speedMode
 volatile long encoder = 0;
 int hours, minutes, seconds, hourOffset = 7;
+boolean rpmMode = false;
+boolean speedMode = true;
 //-----------------END ENCODER--------------------
 
 
@@ -233,8 +224,6 @@ void setup()
   Serial1.println("$PMTK314,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*29");     //Sets GPS to RMC only
   Serial1.println("$PMTK220,200*2C");  //Set GPS to 5hz
   //----------------GPS CONFIGURATION COMPLETE-------------------
-
-
   if(debug){Serial.println("SETUP COMPLETE");}
 }
 
@@ -351,7 +340,7 @@ void loop ()
       speedMode = true;
       rpmMode = false;
     }
-    PIDCalculations()
+    PIDCalculations();
   }
 
   if (Reverse) myservo.writeMicroseconds( minServo + maxServo - pos);
@@ -638,11 +627,11 @@ void PIDCalculations()
     pos100 = Output;
   }
   //PROPORTION ON MEASURE MODE// 
-  else
-  {
-    myPID.Compute();
-    pos100 = Output;
-  }
+  // else
+  // {
+  //   myPID.Compute();
+  //   pos100 = Output;
+  // }
  //----------------------------
 
   pos100 = constrain(pos100, minServo * 10, maxServo * 10);
@@ -856,9 +845,11 @@ void Menu()
 
   if (TurnDetected)
   { // do this only if rotation was detected
-    if ((millis() - prevtime) > threshold) {
+    if ((millis() - prevtime) > threshold) 
+    {
       prevtime = millis();
-      if (up == prev_up) {
+      if (up == prev_up) 
+      {
         if (up)
         {
           if (menuItem == 1) if (Reverse) {minServo -= 10; else maxServo -= 10;}
@@ -890,7 +881,9 @@ void Menu()
           if (menuItem == 11) celsius = !celsius;
           if (menuItem == 12) debug = !debug;
         }
-      } else {
+      } 
+      else 
+      {
         prev_up = up;
       }
       TurnDetected = false;          // do NOT repeat IF_loop until new rotation detected
