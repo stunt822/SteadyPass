@@ -1,10 +1,10 @@
 /*
-   _________ __                     .___       __________                        ____   ________
-  /   _____//  |_  ____ _____     __| _/__.__. \______   \_____    ______ ______ \   \ /   /_   |
-  \_____  \\   __\/ __ \\__  \   / __ <   |  |  |     ___/\__  \  /  ___//  ___/  \       / |   |
-  /        \|  | \  ___/ / __ \_/ /_/ |\___  |  |    |     / __ \_\___ \ \___ \    \     /  |   |
-  /_______  /|__|  \___  >____  /\____ |/ ____|  |____|    /____  /____  >____  >    \___/   |___|
-  ================================================================================================
+  _________ __                     .___       __________                        ____   ________
+ /   _____//  |_  ____ _____     __| _/__.__. \______   \_____    ______ ______ \   \ /   /_   |
+ \_____  \\   __\/ __ \\__  \   / __ <   |  |  |     ___/\__  \  /  ___//  ___/  \       / |   |
+ /        \|  | \  ___/ / __ \_/ /_/ |\___  |  |    |     / __ \_\___ \ \___ \    \     /  |   |
+/_______  /|__|  \___  >____  /\____ |/ ____|  |____|    /____  /____  >____  >    \___/   |___|
+================================================================================================
 ************************************************************************************************
   ---|FILE: SteadyPassV1.ino
   ---|Created By: Dimitry
@@ -29,6 +29,7 @@
 
 //*************INITIALIZING DEFINITIONS*************
 double Setpoint, Input, Output;
+
 //Default PROPORTION ON MEASURE MODE//
 //boolean adaptiveTuningMode = false;
 //PID myPID(&Input, &Output, &Setpoint,2,5,1,P_ON_M, DIRECT);
@@ -39,13 +40,6 @@ double aggKp = 30, aggKi = 0.2, aggKd = 25; //NEED TO MAKE MENU OPTION FOR ADJUS
 double consKp = 15, consKi = 0.1, consKd = 12.5; //NEED TO MAKE MENU OPTION FOR ADJUSTMENTS ON THE FLY
 PID myPID(&Input, &Output, &Setpoint, consKp, consKi, consKd, DIRECT);
 //--------------------------------------------------------------------
-//Default PROPORTION ON MEASURE MODE//
-//PID myPID(&Input, &Output, &Setpoint,2,5,1,P_ON_M, DIRECT);
-//ADAPTIVE TUNING MODE//
-double aggKp=30, aggKi=0.2, aggKd=25;       //NEED TO MAKE MENU OPTION FOR ADJUSTMENTS ON THE FLY
-double consKp=15, consKi=0.1, consKd=12.5;  //NEED TO MAKE MENU OPTION FOR ADJUSTMENTS ON THE FLY
-PID myPID(&Input, &Output, &Setpoint, consKp, consKi, consKd, DIRECT);
-//----------------------------------
 float fltCurrentVersion = 17.00;
 TinyGPSPlus gps;                                //required for TinyGPSplus Library
 DigoleSerialDisp mydisp(9, 8, 10);              //Pin Config SPI | 9: data | 8:clock | 10: SS | you can assign 255 to SS, and hard ground SS pin on module
@@ -162,6 +156,7 @@ boolean modeOn = true;
 volatile long encoder = 0;
 int hours, minutes, seconds, hourOffset = 7;
 boolean speedMode = true;
+
 //-----------------END ENCODER--------------------
 
 
@@ -233,7 +228,6 @@ void setup()
   Serial1.println("$PMTK314,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*29");     //Sets GPS to RMC only
   Serial1.println("$PMTK220,200*2C");  //Set GPS to 5hz
   //----------------GPS CONFIGURATION COMPLETE-------------------
-
   if (debug) {
     Serial.println("SETUP COMPLETE");
   }
@@ -645,8 +639,8 @@ void PIDCalculations()
   //   myPID.Compute();
   //   pos100 = Output;
   // }
-
   //----------------------------
+
   pos100 = constrain(pos100, minServo * 10, maxServo * 10);
   pos = pos100 / 10;
 }
