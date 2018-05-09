@@ -15,7 +15,6 @@
   ---|  17.01 - Sam James - Remade speed and RPM calc into one function.
 */
 
-
 //*************LIBRARYS*************
 #include <TinyGPS++.h>
 #include <Servo.h>
@@ -34,13 +33,15 @@ double Setpoint, Input, Output;
 //boolean adaptiveTuningMode = false;
 //PID myPID(&Input, &Output, &Setpoint,2,5,1,P_ON_M, DIRECT);
 //------------------------------------------------------------
+
 //ADAPTIVE TUNING MODE//
 boolean adaptiveTuningMode = true;
 double aggKp = 30, aggKi = 0.2, aggKd = 25; //NEED TO MAKE MENU OPTION FOR ADJUSTMENTS ON THE FLY
 double consKp = 15, consKi = 0.1, consKd = 12.5; //NEED TO MAKE MENU OPTION FOR ADJUSTMENTS ON THE FLY
 PID myPID(&Input, &Output, &Setpoint, consKp, consKi, consKd, DIRECT);
 //--------------------------------------------------------------------
-float fltCurrentVersion = 17.00;
+
+float fltCurrentVersion = 17.01;
 TinyGPSPlus gps;                                //required for TinyGPSplus Library
 DigoleSerialDisp mydisp(9, 8, 10);              //Pin Config SPI | 9: data | 8:clock | 10: SS | you can assign 255 to SS, and hard ground SS pin on module
 unsigned long tachTime = 0, tachTimePrev = 0;   //keep track of tach time since power on
@@ -161,15 +162,15 @@ boolean speedMode = true;
 
 
 //*************FUNCTION INITIALIZATION*************
-float readSpeed();                          //read GPS speed
-int readRpm();                              //read/calculate currentRPM and reset counters
-void rpmIntHandler();                       //called by interupt, increments counters
-static void smartDelay(unsigned long ms);   //Reads Data from GPS device
-void isr();                                 //encoder - Interrupt service routine is executed when a HIGH to LOW transition is detected on CLK
-void PIDCalculations();                     //Calulate Speed Adjustments based on MPH or RPM depending on mode
-void MainDisplay();                         //Runs the Main LCD screen
-void Menu();                                //runs the USER menu options
-void DebugOutput();                         //Outputs addition information by Serial output for diagnostics and Debuging
+float readSpeed();                            //read GPS speed
+int   readRpm();                              //read/calculate currentRPM and reset counters
+void  rpmIntHandler();                        //called by interupt, increments counters
+static void smartDelay(unsigned long ms);     //Reads Data from GPS device
+void  isr();                                  //encoder - Interrupt service routine is executed when a HIGH to LOW transition is detected on CLK
+void  PIDCalculations();                      //Calulate Speed Adjustments based on MPH or RPM depending on mode
+void  MainDisplay();                          //Runs the Main LCD screen
+void  Menu();                                 //runs the USER menu options
+void  DebugOutput();                          //Outputs addition information by Serial output for diagnostics and Debuging
 //-----------------END--------------------
 
 //************************************************************************************************|
