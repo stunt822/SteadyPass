@@ -21,6 +21,6 @@ to a computer.
 3. if drivers need to be installed, you may receive a prompt to give 
 permission for the update. Click Allow or OK if prompted.
 
-4. The Steady Pass EZ Update window will close automatically when finished.
+4. The Steady Pass EZ Update will show Complete when it is finished.
 
 5. Get back to the water!
