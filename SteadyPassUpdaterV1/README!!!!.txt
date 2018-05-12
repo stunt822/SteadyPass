@@ -14,7 +14,7 @@ WARNING: Do not Unplug or poweroff your board or computer from the usb port duri
 In some cases this may cause the Steady Pass system to be unrecoverable.
 
 1. Plug in a USB cable to your Steady Pass System and connect 
-   to a computer.
+   to a computer. Unplug any other "Arduino" device.
 
 2. double click to run SteadyPassEZUpdate.bat
 
