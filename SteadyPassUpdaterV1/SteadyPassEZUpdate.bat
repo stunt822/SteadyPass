@@ -10,13 +10,13 @@ GOTO reset
 GOTO reset
 
 :reset
-for /f "tokens=1* delims==" %%I in ('wmic path win32_pnpentity get caption /format:list ^| find "Arduino Leonardo"') do (
+for /f "tokens=1* delims==" %%I in ('wmic path win32_pnpentity get caption /format:list ^| find "Arduino"') do (
     call :resetCOM "%%~J"
 )
 
 :continue
 
-for /f "tokens=1* delims==" %%I in ('wmic path win32_pnpentity get caption /format:list ^|find "Arduino Leonardo"')  do (
+for /f "tokens=1* delims==" %%I in ('wmic path win32_pnpentity get caption /format:list ^|find "Arduino"')  do (
     call :setCOM "%%~J"
 )
 
