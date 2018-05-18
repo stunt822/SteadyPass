@@ -1,4 +1,4 @@
-/*
+ /*
   _________ __                     .___       __________                        ____   ________
  /   _____//  |_  ____ _____     __| _/__.__. \______   \_____    ______ ______ \   \ /   /_   |
  \_____  \\   __\/ __ \\__  \   / __ <   |  |  |     ___/\__  \  /  ___//  ___/  \       / |   |
@@ -691,8 +691,8 @@ void MainDisplay()
   mydisp.print("POWER ");
 
   //Print word "MIN" or "FULL" or "  "//
-  if (pos == maxServo)  mydisp.print("MIN ");
-  else  if (pos == minServo)  mydisp.print("FULL ");
+  if (pos == maxServo)  mydisp.print(pos);
+  else  if (pos == minServo)  mydisp.print(pos);
   else  mydisp.print(maxServo / 10 - pos / 10);
   mydisp.print("  ");
 
@@ -708,8 +708,17 @@ void MainDisplay()
     mydisp.print("RPM");
   }
   if (mode == 2) {
-    mydisp.print(TargetSpeedInt / 10);   mydisp.print(".");   mydisp.print(TargetSpeedInt % 10);
-    if (mph) mydisp.print("MPH"); else mydisp.print("KPH");
+   int b = TargetSpeedInt / 10;
+   int a = TargetSpeedInt %10;
+   int c = a + b;
+      if (c < 0) mydisp.print ("-");
+      else mydisp.print (" ");
+      if (b<0)b = -b;
+      mydisp.print (b);
+      mydisp.print (".");
+       if (a<0)a = -a;
+      mydisp.print (a);
+    if (mph) mydisp.print("MPH      "); else mydisp.print("KPH    ");
   }
 
   //Prints Voltage
@@ -809,15 +818,15 @@ void Menu()
   delay(10);
   //  if (menuItem == 6) menuItem ++;
 
-  mydisp.setPrintPos(0, 8);
-  if (menuItem == 7) mydisp.print(">>");
-  //mydisp.print("Ovrst ");  mydisp.print(Kd);   mydisp.print("    ");
-  delay(10);
-
-  mydisp.setPrintPos(0, 9);
-  if (menuItem == 8) mydisp.print(">>");
-  //mydisp.print("Rspns ");  mydisp.print(Ko);    mydisp.print("    ");
-  delay(10);
+//  mydisp.setPrintPos(0, 8);
+//  if (menuItem == 7) mydisp.print(">>");
+//  mydisp.print("Ovrst ");  mydisp.print(Kd);   mydisp.print("    ");
+//  delay(10);
+//
+//  mydisp.setPrintPos(0, 9);
+//  if (menuItem == 8) mydisp.print(">>");
+//  mydisp.print("Rspns ");  mydisp.print(Ko);    mydisp.print("    ");
+//  delay(10);
 
   mydisp.setPrintPos(17, 5);
   if (menuItem == 9) mydisp.print(">>");
@@ -848,100 +857,59 @@ void Menu()
   mydisp.setPrintPos(29, 9);      mydisp.setFont(6);     mydisp.print(buttonTimes2); mydisp.print(" "); mydisp.print(menuItem);
 
 
-  if (TurnDetected)
-  { // do this only if rotation was detected
-    if ((millis() - prevtime) > threshold)
-    {
+ if (TurnDetected)  
+  {       // do this only if rotation was detected
+    if ((millis() - prevtime) > threshold) {
       prevtime = millis();
-      if (up == prev_up)
-      {
+      if (up == prev_up) {
         if (up)
-        {
-          if (menuItem == 1)
-            if (Reverse)
-            {
-              minServo -= 10;
-            }
-            else
-            {
-              maxServo -= 10;
-            }
-          if (menuItem == 2)
           {
-            if (Reverse)
-            {
-              maxServo -= 10;
-            }
-            else
-            {
-              minServo -= 10;
-            }
-            //if (menuItem == 3)
-            if (menuItem == 4) cylCoeff--;
-            if (menuItem == 5) hourOffset -= 1;
-            if (menuItem == 6) Reverse = !Reverse;
-            //if (menuItem == 7) Kd -= 1;
-            //if (menuItem == 8)  Ko -= 1;
-            if (menuItem == 9)  Target100 -= 100;
-            if (menuItem == 10) mph = !mph;
-            if (menuItem == 11) celsius = !celsius;
-            if (menuItem == 12) debug = !debug;
-
+          if (menuItem == 1) if (Reverse) minServo -=10; else maxServo -=10;  
+          if (menuItem == 2)  if (Reverse) maxServo -=10; else minServo -=10;  
+          //if (menuItem == 3) 
+          if (menuItem == 4)  cylCoeff--;  
+          if (menuItem == 5) hourOffset -=1;
+          if (menuItem == 6)  Reverse = !Reverse;
+//          if (menuItem == 7) Kd -=1;
+//          if (menuItem == 8)  Ko -=1;
+          if (menuItem == 9)  Target100 -=100;
+          if (menuItem == 10)  mph=!mph;
+          if (menuItem == 11) celsius = !celsius;
+          if (menuItem == 12) debug = !debug;
+          
           }
-          else
-          {
-            if (menuItem == 1)
-              if (Reverse)
-              {
-                minServo += 10;
-              }
-              else
-              {
-                maxServo += 10;
-              }
-            if (menuItem == 2)
-              if (Reverse)
-              {
-                maxServo += 10;
-              }
-              else
-              {
-                minServo += 10;
-              }
-            //if (menuItem == 3)
-            if (menuItem == 4) cylCoeff++;
-            if (menuItem == 5) hourOffset += 1;
-            if (menuItem == 6) Reverse = !Reverse;
-            //if (menuItem == 7) Kd += 1;
-            //if (menuItem == 8) Ko += 1;
-            if (menuItem == 9)  Target100 += 100;
-            if (menuItem == 10) mph = !mph;
-            if (menuItem == 11) celsius = !celsius;
-            if (menuItem == 12) debug = !debug;
-          }
-        }
         else
-        {
-          prev_up = up;
-        }
-        TurnDetected = false;          // do NOT repeat IF_loop until new rotation detected
+          {
+       if (menuItem == 1) if (Reverse) minServo +=10; else maxServo+=10;  
+          if (menuItem == 2)  if (Reverse) maxServo +=10; else minServo+=10;  
+          //if (menuItem == 3) 
+          if (menuItem == 4)  cylCoeff++;  
+          if (menuItem == 5) hourOffset +=1;
+          if (menuItem == 6)  Reverse = !Reverse;
+//          if (menuItem == 7) Kd +=1;
+//          if (menuItem == 8)  Ko +=1;
+          if (menuItem == 9)  Target100 += 100;
+          if (menuItem == 10)  mph=!mph;
+          if (menuItem == 11) celsius = !celsius;
+          if (menuItem == 12) debug = !debug;
+          }
+      } else {
+        prev_up = up;
       }
+      TurnDetected = false;          // do NOT repeat IF_loop until new rotation detected
     }
+  }
 
     if (digitalRead(PinSW) == LOW)  //menu scroll
     {
       delay(250);
-        if (digitalRead(PinSW) == HIGH)   if (menuItem > 11) menuItem = 1; else menuItem++;
+      if (digitalRead(PinSW) == HIGH)   if (menuItem > 11) menuItem = 1; else menuItem++;
       buttonTimes2++;
     }
-    else {
-      buttonTimes2 = 0;
-    }
-
-    if (buttonTimes2 > 4)
-    {
-      buttonTimes = 0;  buttonTimes2 = 0;  menuItem = 1;  mydisp.clearScreen();
-    }    //exit procedure begin
+    else { buttonTimes2 = 0;} 
+  
+    if (buttonTimes2>4)  
+    {buttonTimes = 0;  buttonTimes2 = 0;  menuItem = 1;  mydisp.clearScreen();    //exit procedure begin
 
     if (EEPROM.read(11) != cylCoeff)
       EEPROM.write(11, cylCoeff);
