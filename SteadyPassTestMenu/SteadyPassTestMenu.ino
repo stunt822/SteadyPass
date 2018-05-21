@@ -12,7 +12,8 @@
   ---|Change History
   ---|  <16.53 - Dimitry - Allversion Prior to 17.00 have been soley created by Dimitry
   ---|  17.00 - Sam James - Renamed File from "Limiter_16_53.ino", Added Title and Change History, Added Function comment and Descriptions, Minor code changes made that will not effect the main code.
-  ---|  17.01 - Sam James - Remade speed and RPM calc into one function.
+  ---|  17.01 - ''''''''' - Remade speed and RPM calc into one function.
+  ---|  17.02 - ''''''''' - Created knob and button switches. Long press, short press,knob up, and knob down. Added basic scroll menu no actual options to set yet
 */
 
 //*************LIBRARYS*************
@@ -31,27 +32,27 @@ double Setpoint, Input, Output;
 
 //Default PROPORTION ON MEASURE MODE//
 //boolean adaptiveTuningMode = false;
-PID myPID(&Input, &Output, &Setpoint,2,5,1,P_ON_M, DIRECT);
+//PID myPID(&Input, &Output, &Setpoint,2,5,1,P_ON_M, DIRECT);
 //------------------------------------------------------------
 
 //ADAPTIVE TUNING MODE//
-// boolean adaptiveTuningMode = true;
-// double aggKp = 30, aggKi = 0.2, aggKd = 25; //NEED TO MAKE MENU OPTION FOR ADJUSTMENTS ON THE FLY
-// double consKp = 15, consKi = 0.1, consKd = 12.5; //NEED TO MAKE MENU OPTION FOR ADJUSTMENTS ON THE FLY
-// PID myPID(&Input, &Output, &Setpoint, consKp, consKi, consKd, DIRECT);
+boolean adaptiveTuningMode = true;
+double aggKp = 30, aggKi = 0.2, aggKd = 25; //NEED TO MAKE MENU OPTION FOR ADJUSTMENTS ON THE FLY
+double consKp = 15, consKi = 0.1, consKd = 12.5; //NEED TO MAKE MENU OPTION FOR ADJUSTMENTS ON THE FLY
+PID myPID(&Input, &Output, &Setpoint, consKp, consKi, consKd, DIRECT);
 //--------------------------------------------------------------------
 //TEST MENU
 //----------___----__---___---___--___--___---__---___----__-
 #define MOVECURSOR 1  // constants for indicating whether cursor should be redrawn
 #define MOVELIST 2  // constants for indicating whether cursor should be redrawn
-byte totalRows = 64;  // total rows of LCD
-byte totalCols = 128;  // total columns of LCD
+byte totalRows = 6;  // total rows of LCD
+byte totalCols = 1;  // total columns of LCD
 unsigned long timeoutTime = 0;  // this is set and compared to millis to see when the user last did something.
 const int menuTimeout = 10000; // time to timeout in a menu when user doesn't do anything.
 //----------___----__---___---___--___--___---__---___----__-
 
 
-float fltCurrentVersion = 17.01;
+float fltCurrentVersion = 17.02;
 TinyGPSPlus gps;                                //required for TinyGPSplus Library
 DigoleSerialDisp mydisp(9, 8, 10);              //Pin Config SPI | 9: data | 8:clock | 10: SS | you can assign 255 to SS, and hard ground SS pin on module
 unsigned long tachTime = 0, tachTimePrev = 0;   //keep track of tach time since power on
@@ -160,6 +161,7 @@ int idleCounter = 0, idleLimit = 2500;
 boolean mainDisplay = true;
 boolean modeOn = true;
 volatile long encoder = 0;
+volatile long prevEncoder = 0;
 int hours, minutes, seconds, hourOffset = 7;
 boolean speedMode = true;
 
@@ -177,6 +179,7 @@ void  MainDisplay();                          //Runs the Main LCD screen
 void  Menu();                                 //runs the USER menu options
 void  DebugOutput();                          //Outputs addition information by Serial output for diagnostics and Debuging
 int read_encoder();                          //Reads knob up/down/press/longpress for menu cases
+void menuSubMenu1();
 //-----------------END--------------------
 
 //************************************************************************************************|
@@ -186,7 +189,7 @@ void setup()
 {
   if (debug)Serial.begin(9600);
   Serial1.begin(9600);   //GPS device
-  delay (2000);
+  delay (5000);
   //digole LCD init section with name and version
   mydisp.begin(); mydisp.clearScreen();  delay(100);   mydisp.print("  ................. "); delay(100); mydisp.clearScreen();  delay(100);   mydisp.print("."); delay(100);
   mydisp.print("   ");  delay(100);  mydisp.print("STEADYPASS");    delay(1000);
@@ -238,9 +241,6 @@ void setup()
   Serial1.println("$PMTK314,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*29");     //Sets GPS to RMC only
   Serial1.println("$PMTK220,200*2C");  //Set GPS to 5hz
   //----------------GPS CONFIGURATION COMPLETE-------------------
-  if (debug) {
-    Serial.println("SETUP COMPLETE");
-  }
 }
 
 //================================================================================================|
@@ -279,10 +279,6 @@ void loop ()
     //possible enhancment to switch to RPM calculation if GPS signal lost for extended time.
   }
   Speed100 = 100 * speedGpsD;
-  if (debug) {
-    Serial.print("Speed 100: ");
-    Serial.println(Speed100);
-  }
 
   currentRPM = readRpm();
 
@@ -363,7 +359,7 @@ void loop ()
   if (Reverse) myservo.writeMicroseconds( minServo + maxServo - pos);
   else  myservo.writeMicroseconds(pos);
 
-  if (debug)  DebugOutput();
+ // if (debug)  DebugOutput();
 
 
   //DISPLAY MAIN OUTPUT section
@@ -557,8 +553,6 @@ int readRpm()
   pulsecount = 0;
   long freqq = 60 * 1e5 * _pulsecount / _duration / cylCoeff;
   freqq *= 10;
-
-  if (debug)Serial.print("freqq "); Serial.println(freqq);
   return (freqq);
 }
 //End Function
@@ -592,7 +586,7 @@ void isr()
 {
   if (digitalRead(PinCLK) == HIGH)
   {
-    up = true;up = true;
+    up = true;
     encoder--;
   }
   else
@@ -601,7 +595,6 @@ void isr()
     encoder++;
   }
   TurnDetected = true;
-  if (debug)Serial.println (encoder);
 }
 //End Function
 //-------------------------------------------------------------------
@@ -628,24 +621,27 @@ void PIDCalculations()
   }
 
   //ADAPTIVE TUNING CALULATIONS//
-  // if (adaptiveTuningMode)
+  if (adaptiveTuningMode)
+  {
+    double gap = abs(Setpoint - Input); //distance away from setpoint
+    if (gap < 10)
+    { //we're close to setpoint, use conservative tuning parameters
+      myPID.SetTunings(consKp, consKi, consKd);
+    }
+    else
+    {
+      //we're far from setpoint, use aggressive tuning parameters
+      myPID.SetTunings(aggKp, aggKi, aggKd);
+    }
+    myPID.Compute();
+    pos100 = Output;
+  }
+  //PROPORTION ON MEASURE MODE//
+  // else
   // {
-  //   double gap = abs(Setpoint - Input); //distance away from setpoint
-  //   if (gap < 10)
-  //   { //we're close to setpoint, use conservative tuning parameters
-  //     myPID.SetTunings(consKp, consKi, consKd);
-  //   }
-  //   else
-  //   {
-  //     //we're far from setpoint, use aggressive tuning parameters
-  //     myPID.SetTunings(aggKp, aggKi, aggKd);
-  //   }
   //   myPID.Compute();
   //   pos100 = Output;
   // }
-  //PROPORTION ON MEASURE MODE//
-    myPID.Compute();
-    pos100 = Output;
   //----------------------------
 
   pos100 = constrain(pos100, minServo * 10, maxServo * 10);
@@ -714,8 +710,17 @@ void MainDisplay()
     mydisp.print("RPM");
   }
   if (mode == 2) {
-    mydisp.print(TargetSpeedInt / 10);   mydisp.print(".");   mydisp.print(TargetSpeedInt % 10);
-    if (mph) mydisp.print("MPH"); else mydisp.print("KPH");
+   int b = TargetSpeedInt / 10;
+   int a = TargetSpeedInt %10;
+   int c = a + b;
+      if (c < 0) mydisp.print ("-");
+      else mydisp.print (" ");
+      if (b<0)b = -b;
+      mydisp.print (b);
+      mydisp.print (".");
+       if (a<0)a = -a;
+      mydisp.print (a);
+    if (mph) mydisp.print("MPH      "); else mydisp.print("KPH    ");
   }
 
   //Prints Voltage
@@ -739,8 +744,8 @@ void MainDisplay()
 
   /*NOT SURE WHAT THIS WAS FOR
     //Main speed output
-    //mydisp.setFont(123);
-    mydisp.setPrintPos(0, 0);
+  	//mydisp.setFont(123);
+  	mydisp.setPrintPos(0, 0);
     //*/
 
   //Prints the Main Speed value On Display
@@ -763,10 +768,9 @@ void MainDisplay()
 
 
 void Menu(){
-  
+  while (digitalRead(PinSW) == LOW){}
   byte topItemDisplayed = 0;  // stores menu item displayed at top of LCD screen
   byte cursorPosition = 0;  // where cursor is on screen, from 0 --> totalRows. 
-
   // redraw = 0  - don't redraw
   // redraw = 1 - redraw cursor
   // redraw = 2 - redraw list
@@ -774,43 +778,42 @@ void Menu(){
   byte i=0; // temp variable for loops.
   byte totalMenuItems = 0;  //a while loop below will set this to the # of menu items.
 
-// Put the menu items here. Remember, the first item will have a 'position' of 0.
+  // Put the menu items here. Remember, the first item will have a 'position' of 0.
   char* menuItems[]={
-    "Max Throttle", 
     "Min Throttle", 
+    "Max Throttle", 
     "Test Throttle Range",
-    "Flip range"
+    "Flip range",
     "Cylinders", 
     "Time zone",
     "Default Target Speed",
     "Speed",
     "Temp",
     "Debug",
+     ""
   };
-
   while (menuItems[totalMenuItems] != ""){
     totalMenuItems++;  // count how many items are in list.
   }
   totalMenuItems--;  //subtract 1 so we know total items in array.
-
   mydisp.clearScreen();  // clear the screen so we can paint the menu.
-
   boolean stillSelecting = true;  // set because user is still selecting.
-
   timeoutTime = millis() + menuTimeout; // set initial timeout limit. 
 
-  do   // loop while waiting for user to select.
-  {
+  do{
     /*
     IF YOU WANT OTHER CODE GOING ON IN THE BACKGROUND
     WHILE WAITING FOR THE USER TO DO SOMETHING, PUT IT HERE
     */
-  } 
+   
     switch(read_encoder()) 
-    {  // analyze encoder response. Default is 0.
-
-
+    {// analyze encoder response. Default is 0.
+    case 0:  // ENCODER none
+      if (debug) {Serial.println("case 0");}
+      break; 
+   
     case 1:  // ENCODER UP
+    if (debug) {Serial.println("case 1");}
       timeoutTime = millis()+menuTimeout;  // reset timeout timer
       //  move menu up one.
       if(cursorPosition == 0 && topItemDisplayed > 0)  //  Cursor is at top of LCD, and there are higher menu items still to be displayed.
@@ -827,6 +830,7 @@ void Menu(){
       break;
 
     case 2:    //ENCODER DOWN
+     if (debug) {Serial.println("case 2");}
       timeoutTime = millis()+menuTimeout;  // reset timeout timer
       // this sees if there are menu items below the bottom of the LCD screen & sees if cursor is at bottom of LCD 
       if((topItemDisplayed + (totalRows-1)) < totalMenuItems && cursorPosition == (totalRows-1))
@@ -842,6 +846,7 @@ void Menu(){
       break;
 
     case 4:  // ENCODER BUTTON SHORT PRESS
+     if (debug) {Serial.println("case 4");}
       timeoutTime = millis()+menuTimeout;  // reset timeout timer
       switch(topItemDisplayed + cursorPosition) // adding these values together = where on menuItems cursor is.
       {
@@ -853,7 +858,9 @@ void Menu(){
         Serial.print(topItemDisplayed + cursorPosition);
         Serial.print(" selected - ");
         Serial.println(menuItems[topItemDisplayed + cursorPosition]);
-        // menuSubMenu1();
+        menuSubMenu1();
+        redraw = MOVELIST;
+
         break;
 
       case 1:  // menu item 2 selected
@@ -861,7 +868,8 @@ void Menu(){
         Serial.print(topItemDisplayed + cursorPosition);
         Serial.print(" selected - ");
         Serial.println(menuItems[topItemDisplayed + cursorPosition]);
-        //menuSubMenu2();
+        menuSubMenu2();
+        redraw = MOVELIST;
         break;
 
       case 2:  // menu item 3 selected
@@ -870,6 +878,7 @@ void Menu(){
         Serial.print(" selected - ");
         Serial.println(menuItems[topItemDisplayed + cursorPosition]);
         //menuSubMenu3();
+        redraw = MOVELIST;
         break;
 
       case 3:  // menu item 4 selected
@@ -878,6 +887,7 @@ void Menu(){
         Serial.print(" selected - ");
         Serial.println(menuItems[topItemDisplayed + cursorPosition]);
         //menuSubMenu4();
+        redraw = MOVELIST;
         break;
 
       case 4:  // menu item 5 selected
@@ -886,6 +896,7 @@ void Menu(){
         Serial.print(" selected - ");
         Serial.println(menuItems[topItemDisplayed + cursorPosition]);
         //menuSubMenu5();
+        redraw = MOVELIST;
         break;
 
       case 5:  // menu item 6 selected
@@ -894,6 +905,7 @@ void Menu(){
         Serial.print(" selected - ");
         Serial.println(menuItems[topItemDisplayed + cursorPosition]);
         //menuSubMenu6();
+        redraw = MOVELIST;
         break;
 
       case 6:  // menu item 7 selected
@@ -902,6 +914,7 @@ void Menu(){
         Serial.print(" selected - ");
         Serial.println(menuItems[topItemDisplayed + cursorPosition]);
         //menuSubMenu7();
+        redraw = MOVELIST;
         break;
 
         case 7:  // menu item 8 selected
@@ -910,6 +923,7 @@ void Menu(){
         Serial.print(" selected - ");
         Serial.println(menuItems[topItemDisplayed + cursorPosition]);
         //menuSubMenu8();
+        redraw = MOVELIST;
         break;
 
         case 8:  // menu item 9 selected
@@ -918,6 +932,7 @@ void Menu(){
         Serial.print(" selected - ");
         Serial.println(menuItems[topItemDisplayed + cursorPosition]);
         //menuSubMenu9();
+        redraw = MOVELIST;
         break;
 
         case 9:  // menu item10 selected
@@ -926,6 +941,7 @@ void Menu(){
         Serial.print(" selected - ");
         Serial.println(menuItems[topItemDisplayed + cursorPosition]);
         //menuSubMenu10();
+        redraw = MOVELIST;
         break;
         // add as many "case #:" as items. Could put 
         //  line separators in menu and leave out the 
@@ -935,8 +951,13 @@ void Menu(){
       break;
       
     case 8:  // encoder button was pushed for long time. This corresponds to "Back" or "Cancel" being pushed.
+     if (debug) {Serial.println("case 8");}
       stillSelecting = false;
+      buttonTimes = 0;
       Serial.println("Button held for a long time");
+      break;
+
+    case 16:  // encoder button is null
       break;
 
     }
@@ -947,15 +968,15 @@ void Menu(){
       if (cursorPosition > totalMenuItems) // keeps cursor from moving beyond menu items.
         cursorPosition = totalMenuItems;
       for(i = 0; i < (totalRows); i++){  // loop through all of the lines on the LCD
+        mydisp.setFont(10);
         mydisp.setPrintPos(0, i);
         mydisp.print(" ");                      // and erase the previously displayed cursor
         mydisp.setPrintPos((totalCols-1), i);
         mydisp.print(" ");
       }
+      mydisp.setFont(10);
       mydisp.setPrintPos(0,cursorPosition);      // go to mydisp line where new cursor should be & display it.
       mydisp.print(">");
-      mydisp.setPrintPos((totalCols-1), cursorPosition);
-      mydisp.print("<");
       break;  // MOVECURSOR break.
 
     case MOVELIST:  // the entire menu needs to be redrawn
@@ -963,12 +984,14 @@ void Menu(){
       mydisp.clearScreen(); // clear screen so it can be repainted.
       if(totalMenuItems>((totalRows-1))){  // if there are more menu items than LCD rows, then cycle through menu items.
         for (i = 0; i < (totalRows); i++){
+          mydisp.setFont(10);
           mydisp.setPrintPos(1,i);
           mydisp.print(menuItems[topItemDisplayed + i]);
         }
       }
       else{  // if menu has less items than LCD rows, display all available menu items.
         for (i = 0; i < totalMenuItems+1; i++){
+          mydisp.setFont(10);
           mydisp.setPrintPos(1,i);
           mydisp.print(menuItems[topItemDisplayed + i]);
         }
@@ -987,228 +1010,8 @@ void Menu(){
        */
     }
   } 
-
-
   while (stillSelecting == true);  //
 }
-
-
-
-//   mydisp.setFont(10);
-//   mydisp.setPrintPos(0, 0);
-//   if (menuItem == 1) {
-//     mydisp.print(">>");
-//     pos = maxServo;
-//   }
-//   mydisp.print("Min Throttle ");  if (Reverse) mydisp.print(minServo); else mydisp.print(maxServo);  mydisp.print("    ");
-//   delay(10);
-//   mydisp.setPrintPos(0, 1);
-//   if (menuItem == 2)  {
-//     mydisp.print(">>");
-//     pos = minServo;
-//   }
-//   mydisp.print("Max Throttle ");   if (Reverse) mydisp.print(maxServo); else mydisp.print(minServo);   mydisp.print("  ");
-//   delay(10);
-
-//   mydisp.setPrintPos(0, 2);
-//   if (menuItem == 3) mydisp.print(">>");
-//   mydisp.print("Swing  ");   mydisp.print("("); if (Reverse) mydisp.print(minServo + maxServo - pos); else mydisp.print(pos); mydisp.print(")     ");
-//   delay(10);
-//   if (menuItem == 3)
-//   {
-//     if (pos <= minServo) S = 1;
-//     if (pos >= maxServo) S = -1;
-//     pos += 10 * S;
-//   }
-//   if (Reverse) myservo.writeMicroseconds( minServo + maxServo - pos);
-//   else  myservo.writeMicroseconds(pos);
-
-//   mydisp.setFont(6);
-//   mydisp.setPrintPos(0, 5);
-//   if (menuItem == 4) mydisp.print(">>");
-//   mydisp.print("Cylinders ");  mydisp.print(cylCoeff);  mydisp.print("    ");
-//   delay(10);
-
-//   mydisp.setPrintPos(0, 6);
-//   if (menuItem == 5) mydisp.print(">>");
-//   mydisp.print("Time zone ");  mydisp.print(hourOffset);  mydisp.print("    ");
-//   delay(10);
-
-//   mydisp.setPrintPos(0, 7);
-//   if (menuItem == 6) mydisp.print(">>");
-//   mydisp.print("Reverse ");  mydisp.print(Reverse);  mydisp.print("   ");
-//   delay(10);
-
-
-//   mydisp.setPrintPos(0, 8);
-//   if (menuItem == 7) mydisp.print(">>");
-//   mydisp.print("Ovrst ");  mydisp.print(Kd);   mydisp.print("    ");
-//   delay(10);
-
-//   mydisp.setPrintPos(0, 9);
-//   if (menuItem == 8) mydisp.print(">>");
-//   mydisp.print("Rspns ");  mydisp.print(Ki);    mydisp.print("    ");
-//   delay(10);
-
-//   mydisp.setPrintPos(17, 5);
-//   if (menuItem == 9) mydisp.print(">>");
-//   mydisp.print("DFT SP ");   mydisp.print(Target100 / 100);
-//   mydisp.print("  ");
-//   delay(10);
-
-//   mydisp.setPrintPos(17, 6);
-//   if (menuItem == 10) mydisp.print(">> ");
-//   mydisp.print("SPEED ");  if (mph) mydisp.print("MPH"); else mydisp.print("KPH");
-//   mydisp.print("  ");
-//   delay(10);
-
-//   mydisp.setPrintPos(17, 7);
-//   if (menuItem == 11) mydisp.print(">>");
-//   mydisp.print("Temp ");  if (celsius) mydisp.print("C"); else mydisp.print("F");
-//   mydisp.print("  ");
-//   delay(10);
-
-//   mydisp.setPrintPos(17, 8);
-//   if (menuItem == 12) mydisp.print(">>");
-//   mydisp.print("DEBUG ");    mydisp.print(debug);
-//   delay(10);
-
-//   mydisp.setPrintPos(17, 9);
-//   mydisp.print("VER: "); mydisp.print(fltCurrentVersion);
-
-//   mydisp.setPrintPos(29, 9);      mydisp.setFont(6);     mydisp.print(buttonTimes2); mydisp.print(" "); mydisp.print(menuItem);
-
-
-//   if (TurnDetected)
-//   { // do this only if rotation was detected
-//     if ((millis() - prevtime) > threshold)
-//     {
-//       prevtime = millis();
-//       if (up == prev_up)
-//       {
-//         if (up)
-//         {
-//           if (menuItem == 1)
-//             if (Reverse)
-//             {
-//               minServo -= 10;
-//             }
-//             else
-//             {
-//               maxServo -= 10;
-//             }
-//           if (menuItem == 2)
-//           {
-//             if (Reverse)
-//             {
-//               maxServo -= 10;
-//             }
-//             else
-//             {
-//               minServo -= 10;
-//             }
-//             //if (menuItem == 3)
-//             if (menuItem == 4) cylCoeff--;
-//             if (menuItem == 5) hourOffset -= 1;
-//             if (menuItem == 6) Reverse = !Reverse;
-//             //if (menuItem == 7) Kd -= 1;
-//             //if (menuItem == 8)  Ko -= 1;
-//             if (menuItem == 9)  Target100 -= 100;
-//             if (menuItem == 10) mph = !mph;
-//             if (menuItem == 11) celsius = !celsius;
-//             if (menuItem == 12) debug = !debug;
-
-//           }
-//           else
-//           {
-//             if (menuItem == 1)
-//               if (Reverse)
-//               {
-//                 minServo += 10;
-//               }
-//               else
-//               {
-//                 maxServo += 10;
-//               }
-//             if (menuItem == 2)
-//               if (Reverse)
-//               {
-//                 maxServo += 10;
-//               }
-//               else
-//               {
-//                 minServo += 10;
-//               }
-//             //if (menuItem == 3)
-//             if (menuItem == 4) cylCoeff++;
-//             if (menuItem == 5) hourOffset += 1;
-//             if (menuItem == 6) Reverse = !Reverse;
-//             //if (menuItem == 7) Kd += 1;
-//             //if (menuItem == 8) Ko += 1;
-//             if (menuItem == 9)  Target100 += 100;
-//             if (menuItem == 10) mph = !mph;
-//             if (menuItem == 11) celsius = !celsius;
-//             if (menuItem == 12) debug = !debug;
-//           }
-//         }
-//         else
-//         {
-//           prev_up = up;
-//         }
-//         TurnDetected = false;          // do NOT repeat IF_loop until new rotation detected
-//       }
-//     }
-
-//     if (digitalRead(PinSW) == LOW)  //menu scroll
-//     {
-//       delay(250);
-//         if (digitalRead(PinSW) == HIGH)   if (menuItem > 11) menuItem = 1; else menuItem++;
-//       buttonTimes2++;
-//     }
-//     else {
-//       buttonTimes2 = 0;
-//     }
-
-//     if (buttonTimes2 > 4)
-//     {
-//       buttonTimes = 0;  buttonTimes2 = 0;  menuItem = 1;  mydisp.clearScreen();
-//     }    //exit procedure begin
-
-//     if (EEPROM.read(11) != cylCoeff)
-//       EEPROM.write(11, cylCoeff);
-//     if (EEPROM.read(12) != aggKp      )
-//     EEPROM.write(12, aggKp);
-//     if (EEPROM.read(13) != aggKd      )
-//     EEPROM.write(13, aggKd);
-//     if (EEPROM.read(14) != aggKi      )
-//     EEPROM.write(14, aggKi);
-//     if (EEPROM.read(22) != consKp      )
-//     EEPROM.write(22, aggKp);
-//     if (EEPROM.read(23) != consKd      )
-//     EEPROM.write(23, aggKd);
-//     if (EEPROM.read(24) != consKi      )
-//     EEPROM.write(24, aggKi);
-//     if (EEPROM.read(15) != 24 - hourOffset)
-//       EEPROM.write(15, (24 - hourOffset));
-//     if (EEPROM.read(16) != maxServo / 10 )
-//       EEPROM.write(16, (maxServo / 10));
-//     if (EEPROM.read(17) != minServo / 10 )
-//       EEPROM.write(17, (minServo / 10));
-//     if (EEPROM.read(18) != mph     )
-//       EEPROM.write(18, (mph));
-//     if (EEPROM.read(29) != celsius )
-//       EEPROM.write(29, (celsius));
-//     if (EEPROM.read(30) != Target100 / 100 )
-//     {
-//       EEPROM.write(30, (Target100 / 100));   //check for accidental EEPROM write
-//       Serial.print("EEPROM!: ");
-//       Serial.println(millis());
-//     }
-//     if (EEPROM.read(31) != Reverse )
-//       EEPROM.write(31, Reverse);
-
-//   }  //while exit condition met
-// }  //end menu
 
 
 
@@ -1217,25 +1020,151 @@ int read_encoder(){
   #define btnDown       2
   #define btnPress      4
   #define btnLongPress  8
+  #define btnNull       16
   
   if (TurnDetected){
-    if (up = true) return btnUp;
-    if (up = false) return btnDown;
-    TurnDetected = false;
+    if (encoder > 0) {
+      encoder = 0;
+      if (debug) {Serial.println("UP");}
+      TurnDetected = false;
+      return btnUp;
+    }
+    else if (encoder < 0){
+      encoder = 0;
+      if (debug) {Serial.println("DOWN");}
+      TurnDetected = false;
+      return btnDown;
+    }
+    else { 
+      TurnDetected = false;
+      return btnNull;}
   }
-  if (digitalRead(PinSW) == LOW)
-  {
-    inMenuPress++;
-  }
-  else {
-    if (inMenuPress > 0) {
-      return btnPress;
-      inMenuPress = 0;
+  else{
+    if (digitalRead(PinSW) == LOW)
+      {
+         inMenuPress++;
+         if (debug) {Serial.println("press held: ");Serial.println(inMenuPress);}
+          delay(300);
+      }
+    else if (inMenuPress > 0) {
+        inMenuPress = 0;
+        if (debug) {Serial.println("SHORT PRESS");}
+          mydisp.clearScreen();
+          mydisp.setFont(20);
+          mydisp.setPrintPos(0,0);
+          mydisp.print("ENTER");
+          delay(1000);
+          mydisp.clearScreen();
+          return btnPress;
+      }
+    else { return btnNull; }
+    
+    if (inMenuPress > inMenuPressTarget){
+        inMenuPress = 0;
+        if (debug) {Serial.println("LONG PRESS");}
+          mydisp.clearScreen();
+          mydisp.setFont(20);
+          mydisp.setPrintPos(0,0);
+          mydisp.print("BACK");
+        while (digitalRead(PinSW) == LOW){};
+          mydisp.clearScreen();
+        return btnLongPress;
     }
   }
-  if (inMenuPress > inMenuPressTarget){
-    return btnLongPress;
+}
+
+void menuSubMenu1(){
+  boolean stillSelecting = true;
+  pos = maxServo;
+  mydisp.clearScreen();
+  mydisp.setFont(10);
+  mydisp.setPrintPos(0, 0);
+  mydisp.print("Min Throttle ");  
+  mydisp.setPrintPos(0, 1);
+  if (Reverse) mydisp.print(minServo); else mydisp.print(maxServo);  mydisp.print("    ");
+ do{
+    /*
+    IF YOU WANT OTHER CODE GOING ON IN THE BACKGROUND
+    WHILE WAITING FOR THE USER TO DO SOMETHING, PUT IT HERE
+    */
+    
+    switch(read_encoder())
+    {// analyze encoder response. Default is 0.
+      case 1:  // ENCODER UP
+        timeoutTime = millis()+menuTimeout;  // reset timeout timer
+        if (Reverse) minServo +=10; else maxServo+=10;
+        mydisp.setPrintPos(0, 1);
+        if (Reverse) mydisp.print(minServo); else mydisp.print(maxServo);  mydisp.print("    ");
+        break;
+
+      case 2:    //ENCODER DOWN
+        timeoutTime = millis()+menuTimeout;  // reset timeout timer
+        if (Reverse) minServo -=10; else maxServo -=10;
+        mydisp.setPrintPos(0, 1);
+        if (Reverse) mydisp.print(minServo); else mydisp.print(maxServo);  mydisp.print("    ");
+        break;
+
+      case 4:  // ENCODER BUTTON SHORT PRESS
+        timeoutTime = millis()+menuTimeout;  // reset timeout timer
+        stillSelecting = false;
+        break;
+
+      case 8:  // ENCODER BUTTON LONG PRESS
+        break;
+
+      case 16:  // ENCODER BUTTON NULL
+        break;
+
+    }
   }
+   while (stillSelecting == true);
+}
+
+void menuSubMenu2(){
+  boolean stillSelecting = true;
+  pos = minServo;
+  mydisp.clearScreen();
+  mydisp.setFont(10);
+  mydisp.setPrintPos(0, 0);
+  mydisp.print("Max Throttle ");  
+  mydisp.setPrintPos(0, 1);
+  if (Reverse) mydisp.print(maxServo); else mydisp.print(minServo);  mydisp.print("    ");
+ do{
+    /*
+    IF YOU WANT OTHER CODE GOING ON IN THE BACKGROUND
+    WHILE WAITING FOR THE USER TO DO SOMETHING, PUT IT HERE
+    */
+    
+    switch(read_encoder())
+    {// analyze encoder response. Default is 0.
+      case 1:  // ENCODER UP
+        timeoutTime = millis()+menuTimeout;  // reset timeout timer
+        if (Reverse) minServo +=10; else minServo+=10;
+        mydisp.setPrintPos(0, 1);
+        if (Reverse) mydisp.print(minServo); else mydisp.print(minServo);  mydisp.print("    ");
+        break;
+
+      case 2:    //ENCODER DOWN
+        timeoutTime = millis()+menuTimeout;  // reset timeout timer
+        if (Reverse) minServo -=10; else minServo -=10;
+        mydisp.setPrintPos(0, 1);
+        if (Reverse) mydisp.print(minServo); else mydisp.print(minServo);  mydisp.print("    ");
+        break;
+
+      case 4:  // ENCODER BUTTON SHORT PRESS
+        timeoutTime = millis()+menuTimeout;  // reset timeout timer
+        stillSelecting = false;
+        break;
+
+      case 8:  // ENCODER BUTTON LONG PRESS
+        break;
+
+      case 16:  // ENCODER BUTTON NULL
+        break;
+
+    }
+  }
+   while (stillSelecting == true);
 }
 
 
