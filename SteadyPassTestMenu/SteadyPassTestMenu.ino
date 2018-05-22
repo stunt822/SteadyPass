@@ -59,7 +59,7 @@ unsigned long tachTime = 0, tachTimePrev = 0;   //keep track of tach time since 
 boolean debug = false;                          //Debug mode
 boolean led = false;                            //LED on | off
 float voltage = 0, volt1, volt2;                //voltage value
-int cylCoeff = 4;                               //Number of Cylinders
+int cylCoeff = 6;                               //Number of Cylinders
 boolean gpsMode = true;                         //GPS mode (true) or RPM mode (false)
 int mode = 0;                                   //Calculations mode 0=off 1=RPM 2=MPH/KPH
 int DisplayMode = 0;                            //display mode
@@ -117,6 +117,8 @@ int PrevSpeed = 0;
 int Speed100, delta100, pos100;  //int * 100 values
 boolean mph = true;
 unsigned long throttleCheck = 0;
+int targetSpeedWhole = TargetSpeedInt / 10;
+int targetSpeedDecimal = TargetSpeedInt %10;
 //-----------------END SPEED--------------------
 
 
@@ -179,7 +181,6 @@ void  MainDisplay();                          //Runs the Main LCD screen
 void  Menu();                                 //runs the USER menu options
 void  DebugOutput();                          //Outputs addition information by Serial output for diagnostics and Debuging
 int read_encoder();                          //Reads knob up/down/press/longpress for menu cases
-void menuSubMenu1();
 //-----------------END--------------------
 
 //************************************************************************************************|
@@ -410,6 +411,7 @@ void loop ()
   {
     mainDisplay = false;
     mydisp.clearScreen();
+    delay(300);
   }
   if (!mainDisplay)
   {
@@ -474,6 +476,7 @@ void loop ()
       idleCounter = 0;
       mainDisplay = true;
       mydisp.clearScreen();
+      delay(100);
     }
 
   }
@@ -662,7 +665,7 @@ void PIDCalculations()
 void MainDisplay()
 {
   //GPS Time Display//
-  hours = gps.time.hour() - hourOffset;
+  hours = gps.time.hour() + hourOffset;
   if (hours < 0)
     hours += 24;
   minutes = gps.time.minute();
@@ -710,17 +713,9 @@ void MainDisplay()
     mydisp.print("RPM");
   }
   if (mode == 2) {
-   int b = TargetSpeedInt / 10;
-   int a = TargetSpeedInt %10;
-   int c = a + b;
-      if (c < 0) mydisp.print ("-");
-      else mydisp.print (" ");
-      if (b<0)b = -b;
-      mydisp.print (b);
-      mydisp.print (".");
-       if (a<0)a = -a;
-      mydisp.print (a);
-    if (mph) mydisp.print("MPH      "); else mydisp.print("KPH    ");
+    targetSpeedWhole = TargetSpeedInt / 10;
+    targetSpeedDecimal = TargetSpeedInt %10;
+    printTargetSpeed();
   }
 
   //Prints Voltage
@@ -782,12 +777,12 @@ void Menu(){
   char* menuItems[]={
     "Min Throttle", 
     "Max Throttle", 
-    "Test Throttle Range",
-    "Flip range",
-    "Cylinders", 
-    "Time zone",
+    "Test Servo Range",
+    "Reverse Servo Mode",
+    "Engine Cylinders", 
+    "Time Zone Offset",
     "Default Target Speed",
-    "Speed",
+    "Unit of Measure",
     "Temp",
     "Debug",
      ""
@@ -854,95 +849,45 @@ void Menu(){
       // the Serial.print code can be removed, but DO NOT change the case & break structure. 
       // (Obviously, you should have as many case instances as you do menu items.)
       case 0:  // menu item 1 selected
-        Serial.print("Menu item ");
-        Serial.print(topItemDisplayed + cursorPosition);
-        Serial.print(" selected - ");
-        Serial.println(menuItems[topItemDisplayed + cursorPosition]);
-        menuSubMenu1();
+        minThrottleMenu();
         redraw = MOVELIST;
-
-        break;
-
+      break;
       case 1:  // menu item 2 selected
-        Serial.print("Menu item ");
-        Serial.print(topItemDisplayed + cursorPosition);
-        Serial.print(" selected - ");
-        Serial.println(menuItems[topItemDisplayed + cursorPosition]);
-        menuSubMenu2();
+        maxThrottleMenu();
         redraw = MOVELIST;
-        break;
-
+      break;
       case 2:  // menu item 3 selected
-        Serial.print("Menu item ");
-        Serial.print(topItemDisplayed + cursorPosition);
-        Serial.print(" selected - ");
-        Serial.println(menuItems[topItemDisplayed + cursorPosition]);
-        //menuSubMenu3();
+        testThrottleMenu();
         redraw = MOVELIST;
-        break;
-
+      break;
       case 3:  // menu item 4 selected
-        Serial.print("Menu item ");
-        Serial.print(topItemDisplayed + cursorPosition);
-        Serial.print(" selected - ");
-        Serial.println(menuItems[topItemDisplayed + cursorPosition]);
-        //menuSubMenu4();
+        reverseServoModeMenu();
         redraw = MOVELIST;
-        break;
-
+      break;
       case 4:  // menu item 5 selected
-        Serial.print("Menu item ");
-        Serial.print(topItemDisplayed + cursorPosition);
-        Serial.print(" selected - ");
-        Serial.println(menuItems[topItemDisplayed + cursorPosition]);
-        //menuSubMenu5();
+       cylinderCountMenu();
         redraw = MOVELIST;
-        break;
-
+      break;
       case 5:  // menu item 6 selected
-        Serial.print("Menu item ");
-        Serial.print(topItemDisplayed + cursorPosition);
-        Serial.print(" selected - ");
-        Serial.println(menuItems[topItemDisplayed + cursorPosition]);
-        //menuSubMenu6();
+        timeZoneMenu();
         redraw = MOVELIST;
-        break;
-
+      break;
       case 6:  // menu item 7 selected
-        Serial.print("Menu item ");
-        Serial.print(topItemDisplayed + cursorPosition);
-        Serial.print(" selected - ");
-        Serial.println(menuItems[topItemDisplayed + cursorPosition]);
-        //menuSubMenu7();
+        defaultTargetSpeedMenu();
         redraw = MOVELIST;
-        break;
-
-        case 7:  // menu item 8 selected
-        Serial.print("Menu item ");
-        Serial.print(topItemDisplayed + cursorPosition);
-        Serial.print(" selected - ");
-        Serial.println(menuItems[topItemDisplayed + cursorPosition]);
-        //menuSubMenu8();
+      break;
+      case 7:  // menu item 8 selected
+        unitMeasureMenu();
         redraw = MOVELIST;
-        break;
-
-        case 8:  // menu item 9 selected
-        Serial.print("Menu item ");
-        Serial.print(topItemDisplayed + cursorPosition);
-        Serial.print(" selected - ");
-        Serial.println(menuItems[topItemDisplayed + cursorPosition]);
-        //menuSubMenu9();
+      break;
+       case 8:  // menu item 9 selected
+        tempUnitMenu();
         redraw = MOVELIST;
-        break;
-
-        case 9:  // menu item10 selected
-        Serial.print("Menu item ");
-        Serial.print(topItemDisplayed + cursorPosition);
-        Serial.print(" selected - ");
-        Serial.println(menuItems[topItemDisplayed + cursorPosition]);
-        //menuSubMenu10();
+      break;
+      case 9:  // menu item10 selected
+        debugMenu();
         redraw = MOVELIST;
-        break;
+      break;
         // add as many "case #:" as items. Could put 
         //  line separators in menu and leave out the 
         //  corresponding case, which would mean that nothing
@@ -1073,7 +1018,7 @@ int read_encoder(){
   }
 }
 
-void menuSubMenu1(){
+void minThrottleMenu(){
   boolean stillSelecting = true;
   pos = maxServo;
   mydisp.clearScreen();
@@ -1095,6 +1040,8 @@ void menuSubMenu1(){
         if (Reverse) minServo +=10; else maxServo+=10;
         mydisp.setPrintPos(0, 1);
         if (Reverse) mydisp.print(minServo); else mydisp.print(maxServo);  mydisp.print("    ");
+        if (Reverse) myservo.writeMicroseconds( minServo + maxServo - pos);
+        else  myservo.writeMicroseconds(pos);
         break;
 
       case 2:    //ENCODER DOWN
@@ -1102,6 +1049,8 @@ void menuSubMenu1(){
         if (Reverse) minServo -=10; else maxServo -=10;
         mydisp.setPrintPos(0, 1);
         if (Reverse) mydisp.print(minServo); else mydisp.print(maxServo);  mydisp.print("    ");
+        if (Reverse) myservo.writeMicroseconds( minServo + maxServo - pos);
+        else  myservo.writeMicroseconds(pos);
         break;
 
       case 4:  // ENCODER BUTTON SHORT PRESS
@@ -1120,7 +1069,7 @@ void menuSubMenu1(){
    while (stillSelecting == true);
 }
 
-void menuSubMenu2(){
+void maxThrottleMenu(){
   boolean stillSelecting = true;
   pos = minServo;
   mydisp.clearScreen();
@@ -1129,26 +1078,173 @@ void menuSubMenu2(){
   mydisp.print("Max Throttle ");  
   mydisp.setPrintPos(0, 1);
   if (Reverse) mydisp.print(maxServo); else mydisp.print(minServo);  mydisp.print("    ");
+ do{   
+    switch(read_encoder())
+    {
+      case 1:  // ENCODER UP
+        timeoutTime = millis()+menuTimeout;
+        if (Reverse) minServo +=10; else minServo+=10;
+        mydisp.setPrintPos(0, 1);
+        if (Reverse) mydisp.print(minServo); else mydisp.print(minServo);  mydisp.print("    ");
+        if (Reverse) myservo.writeMicroseconds( minServo + maxServo - pos);
+        else  myservo.writeMicroseconds(pos);
+        break;
+
+      case 2:    //ENCODER DOWN
+        timeoutTime = millis()+menuTimeout;
+        if (Reverse) minServo -=10; else minServo -=10;
+        mydisp.setPrintPos(0, 1);
+        if (Reverse) mydisp.print(minServo); else mydisp.print(minServo);  mydisp.print("    ");
+        if (Reverse) myservo.writeMicroseconds( minServo + maxServo - pos);
+        else  myservo.writeMicroseconds(pos);
+        break;
+
+      case 4:  // ENCODER BUTTON SHORT PRESS
+        timeoutTime = millis()+menuTimeout;
+        stillSelecting = false;
+        break;
+
+      case 8:  // ENCODER BUTTON LONG PRESS
+        break;
+
+      case 16:  // ENCODER BUTTON NULL
+        break;
+
+    }
+  }
+   while (stillSelecting == true);
+}
+
+void testThrottleMenu(){
+  boolean stillSelecting = true;
+  pos = minServo;
+  mydisp.clearScreen();
+  mydisp.setFont(10);
+  mydisp.setPrintPos(0, 0);
+  mydisp.print("Test Throttle Range ");  
+  mydisp.setPrintPos(0, 1);
  do{
-    /*
-    IF YOU WANT OTHER CODE GOING ON IN THE BACKGROUND
-    WHILE WAITING FOR THE USER TO DO SOMETHING, PUT IT HERE
-    */
-    
+    mydisp.print("("); if (Reverse) mydisp.print(minServo + maxServo - pos); else mydisp.print(pos); mydisp.print(")     ");
+    delay(10);
+    if (pos <= minServo) S = 1;
+    if (pos >= maxServo) S = -1;
+    pos += 10 * S;
+    if (Reverse) myservo.writeMicroseconds( minServo + maxServo - pos);
+    else  myservo.writeMicroseconds(pos);
+
+  
+    switch(read_encoder())
+    {
+      case 1:  // ENCODER UP
+        timeoutTime = millis()+menuTimeout;
+        break;
+
+      case 2:    //ENCODER DOWN
+        timeoutTime = millis()+menuTimeout;
+        break;
+
+      case 4:  // ENCODER BUTTON SHORT PRESS
+        timeoutTime = millis()+menuTimeout;
+        stillSelecting = false;
+        break;
+
+      case 8:  // ENCODER BUTTON LONG PRESS
+        break;
+
+      case 16:  // ENCODER BUTTON NULL
+        break;
+
+    }
+  }
+   while (stillSelecting == true);
+}
+
+void reverseServoModeMenu(){
+  boolean stillSelecting = true;
+  mydisp.clearScreen();
+  mydisp.setFont(10);
+  mydisp.setPrintPos(0, 0);
+  mydisp.print("Reverse Servo Mode");  
+  mydisp.setPrintPos(0, 1);
+  if (Reverse) mydisp.print("Reverse Mode");
+  if !(Reverse) mydisp.print("Normal Mode");
+
+ do{
+    switch(read_encoder())
+    {
+      case 1:  // ENCODER UP
+        timeoutTime = millis()+menuTimeout;
+        mydisp.setPrintPos(0, 1);
+        if (Reverse){
+          mydisp.print("Normal Mode");
+          Reverse = false;}
+        if !(Reverse) {
+          mydisp.print("Reverse Mode");
+          Reverse = true;}
+        break;
+
+      case 2:    //ENCODER DOWN
+        timeoutTime = millis()+menuTimeout;
+        mydisp.setPrintPos(0, 1);
+        if (Reverse){
+          mydisp.print("Normal Mode");
+          Reverse = false;}
+        if !(Reverse) {
+          mydisp.print("Reverse Mode");
+          Reverse = true;}
+        break;
+
+      case 4:  // ENCODER BUTTON SHORT PRESS
+        timeoutTime = millis()+menuTimeout;
+        stillSelecting = false;
+        break;
+
+      case 8:  // ENCODER BUTTON LONG PRESS
+        break;
+
+      case 16:  // ENCODER BUTTON NULL
+        break;
+    }
+  }
+   while (stillSelecting == true);
+}
+
+void cylinderCountMenu(){
+  boolean stillSelecting = true;
+  mydisp.clearScreen();
+  mydisp.setFont(10);
+  mydisp.setPrintPos(0, 0);
+  mydisp.print("Engine Cylinders ");  
+  mydisp.setPrintPos(0, 1);
+  mydisp.print(cylCoeff);
+ do{
+
     switch(read_encoder())
     {// analyze encoder response. Default is 0.
       case 1:  // ENCODER UP
         timeoutTime = millis()+menuTimeout;  // reset timeout timer
-        if (Reverse) minServo +=10; else minServo+=10;
         mydisp.setPrintPos(0, 1);
-        if (Reverse) mydisp.print(minServo); else mydisp.print(minServo);  mydisp.print("    ");
+        if (cylCoeff < 8){
+          cylCoeff = cylCoeff + 2;
+          mydisp.print(cylCoeff);}
+        else {
+          cylCoeff = 8;
+          mydisp.print(cylCoeff);}
+          mydisp.setPrintPos(0, 2);
+          mydisp.print("Max Cylinders");
         break;
 
       case 2:    //ENCODER DOWN
         timeoutTime = millis()+menuTimeout;  // reset timeout timer
-        if (Reverse) minServo -=10; else minServo -=10;
         mydisp.setPrintPos(0, 1);
-        if (Reverse) mydisp.print(minServo); else mydisp.print(minServo);  mydisp.print("    ");
+        if (cylCoeff > 4){
+          cylCoeff = cylCoeff - 2;
+          mydisp.print(cylCoeff);}
+        else {
+          cylCoeff = 4;
+          mydisp.print(cylCoeff);}
+          mydisp.setPrintPos(0, 2);
+          mydisp.print("Min Cylinders");
         break;
 
       case 4:  // ENCODER BUTTON SHORT PRESS
@@ -1167,7 +1263,312 @@ void menuSubMenu2(){
    while (stillSelecting == true);
 }
 
+void timeZoneMenu(){
+  boolean stillSelecting = true;
+  mydisp.clearScreen();
+  mydisp.setFont(10);
+  mydisp.setPrintPos(0, 0);
+  mydisp.print("Time Zone Offset ");  
+ do{
+    /*
+    IF YOU WANT OTHER CODE GOING ON IN THE BACKGROUND
+    WHILE WAITING FOR THE USER TO DO SOMETHING, PUT IT HERE
+    */
+    switch(read_encoder())
+    {// analyze encoder response. Default is 0.
+      case 1:  // ENCODER UP
+        timeoutTime = millis()+menuTimeout;  // reset timeout timer
+        mydisp.setPrintPos(0, 1);
+        if (hourOffset < 12){
+          hourOffset = hourOffset + 1;
+        }
+        else {
+          hourOffset = 12;
+        }
+        mydisp.setPrintPos(0, 2);
+        if (hourOffset > 0){
+          mydisp.print("+"); mydisp.print(hourOffset);
+        }
+        else if (hourOffset = 0){
+          mydisp.print(hourOffset);
+        }
+        else{
+          mydisp.print("-"); mydisp.print(hourOffset);
+        }
+        hours = gps.time.hour() + hourOffset;
+        mydisp.setPrintPos(0, 3);
+        mydisp.print("Current Time: ");
+        mydisp.print(hours); mydisp.print(":"); if (minutes < 10) mydisp.print("0"); mydisp.print(minutes); mydisp.print(":"); if (seconds < 10) mydisp.print("0"); mydisp.print(seconds);
+      break;
 
+      case 2:    //ENCODER DOWN
+        timeoutTime = millis()+menuTimeout;  // reset timeout timer
+        mydisp.setPrintPos(0, 1);
+        if (hourOffset > -12){
+          hourOffset = hourOffset - 1;
+        }
+        else {
+          hourOffset = -12;
+        }
+        mydisp.setPrintPos(0, 2);
+        if (hourOffset > 0){
+          mydisp.print("+"); mydisp.print(hourOffset);
+        }
+        else if (hourOffset = 0){
+          mydisp.print(hourOffset);
+        }
+        else{
+          mydisp.print("-"); mydisp.print(hourOffset);
+        }
+        hours = gps.time.hour() + hourOffset;
+        mydisp.setPrintPos(0, 3);
+        mydisp.print("Current Time: ");
+        mydisp.print(hours); mydisp.print(":"); if (minutes < 10) mydisp.print("0"); mydisp.print(minutes); mydisp.print(":"); if (seconds < 10) mydisp.print("0"); mydisp.print(seconds);
+      break;
+
+      case 4:  // ENCODER BUTTON SHORT PRESS
+        timeoutTime = millis()+menuTimeout;  // reset timeout timer
+        stillSelecting = false;
+        break;
+
+      case 8:  // ENCODER BUTTON LONG PRESS
+        break;
+
+      case 16:  // ENCODER BUTTON NULL
+        break;
+mydisp.print(hours); mydisp.print(":"); if (minutes < 10) mydisp.print("0"); mydisp.print(minutes); mydisp.print(":"); if (seconds < 10) mydisp.print("0"); mydisp.print(seconds); mydisp.print("            ");
+    }
+  }
+   while (stillSelecting == true);
+}
+
+void defaultTargetSpeedMenu(){
+  boolean stillSelecting = true;
+  mydisp.clearScreen();
+  mydisp.setFont(10);
+  mydisp.setPrintPos(0, 0);
+  mydisp.print("Default Target Speed ");  
+  mydisp.setPrintPos(0, 1);
+  printTargetSpeed();
+ do{
+    switch(read_encoder())
+    {// analyze encoder response. Default is 0.
+      case 1:  // ENCODER UP
+        timeoutTime = millis()+menuTimeout;  // reset timeout timer
+        Target100 = Target100 + 10;
+        mydisp.setPrintPos(0, 1);
+        printTargetSpeed();
+        break;
+
+      case 2:    //ENCODER DOWN
+        timeoutTime = millis()+menuTimeout;  // reset timeout timer
+        Target100 = Target100 - 10;
+        mydisp.setPrintPos(0, 1);
+        printTargetSpeed();
+        break;
+
+      case 4:  // ENCODER BUTTON SHORT PRESS
+        timeoutTime = millis()+menuTimeout;  // reset timeout timer
+        stillSelecting = false;
+        break;
+
+      case 8:  // ENCODER BUTTON LONG PRESS
+        break;
+
+      case 16:  // ENCODER BUTTON NULL
+        break;
+
+    }
+  }
+   while (stillSelecting == true);
+}
+   
+void unitMeasureMenu(){
+  boolean stillSelecting = true;
+  mydisp.clearScreen();
+  mydisp.setFont(10);
+  mydisp.setPrintPos(0, 0);
+  mydisp.print("Unit of Measure");  
+  mydisp.setPrintPos(0, 1);
+  if (mph) mydisp.print("MPH "); else mydisp.print("KPH ");
+ do{
+    switch(read_encoder())
+    {// analyze encoder response. Default is 0.
+      case 1:  // ENCODER UP
+        timeoutTime = millis()+menuTimeout;  // reset timeout timer
+        mph = !mph;
+        mydisp.setPrintPos(0, 1);
+        if (mph) mydisp.print("MPH "); else mydisp.print("KPH ");
+      break;
+
+      case 2:    //ENCODER DOWN
+        timeoutTime = millis()+menuTimeout;  // reset timeout timer
+        mph = !mph;
+        mydisp.setPrintPos(0, 1);
+        if (mph) mydisp.print("MPH "); else mydisp.print("KPH ");
+      break;
+
+      case 4:  // ENCODER BUTTON SHORT PRESS
+        timeoutTime = millis()+menuTimeout;  // reset timeout timer
+        stillSelecting = false;
+      break;
+
+      case 8:  // ENCODER BUTTON LONG PRESS
+      break;
+
+      case 16:  // ENCODER BUTTON NULL
+      break;
+
+    }
+  }
+   while (stillSelecting == true);
+}
+
+void tempUnitMenu(){
+  boolean stillSelecting = true;
+  mydisp.clearScreen();
+  mydisp.setFont(10);
+  mydisp.setPrintPos(0, 0);
+  mydisp.print("Tempturature Measure Mode ");  
+  mydisp.setPrintPos(0, 1);
+ do{
+    /*
+    IF YOU WANT OTHER CODE GOING ON IN THE BACKGROUND
+    WHILE WAITING FOR THE USER TO DO SOMETHING, PUT IT HERE
+    */
+    switch(read_encoder())
+     {// analyze encoder response. Default is 0.
+     case 1:  // ENCODER UP
+        timeoutTime = millis()+menuTimeout;  // reset timeout timer
+        celsius = !celsius;
+        mydisp.setPrintPos(0, 1);
+        if (celsius) mydisp.print("Celsius "); else mydisp.print("Farenheit ");
+      break;
+
+      case 2:    //ENCODER DOWN
+        timeoutTime = millis()+menuTimeout;  // reset timeout timer
+        celsius = !celsius;
+        mydisp.setPrintPos(0, 1);
+        if (celsius) mydisp.print("Celsius "); else mydisp.print("Farenheit ");
+       break;
+
+      case 4:  // ENCODER BUTTON SHORT PRESS
+        timeoutTime = millis()+menuTimeout;  // reset timeout timer
+        stillSelecting = false;
+       break;
+
+      case 8:  // ENCODER BUTTON LONG PRESS
+       break;
+
+      case 16:  // ENCODER BUTTON NULL
+       break;
+
+    }
+  }
+   while (stillSelecting == true);
+}
+
+void debugMenu(){
+  boolean stillSelecting = true;
+  mydisp.clearScreen();
+  mydisp.setFont(10);
+  mydisp.setPrintPos(0, 0);
+  mydisp.print("Debug Mode ");  
+  mydisp.setPrintPos(0, 1);
+ do{
+    /*
+    IF YOU WANT OTHER CODE GOING ON IN THE BACKGROUND
+    WHILE WAITING FOR THE USER TO DO SOMETHING, PUT IT HERE
+    */
+    switch(read_encoder())
+     {// analyze encoder response. Default is 0.
+     case 1:  // ENCODER UP
+        timeoutTime = millis()+menuTimeout;  // reset timeout timer
+        debug = !debug;
+        mydisp.setPrintPos(0, 1);
+        if (debug) mydisp.print("ON "); else mydisp.print("OFF ");
+      break;
+
+      case 2:    //ENCODER DOWN
+        timeoutTime = millis()+menuTimeout;  // reset timeout timer
+        debug = !debug;
+        mydisp.setPrintPos(0, 1);
+        if (debug) mydisp.print("ON "); else mydisp.print("OFF ");
+       break;
+
+      case 4:  // ENCODER BUTTON SHORT PRESS
+        timeoutTime = millis()+menuTimeout;  // reset timeout timer
+        stillSelecting = false;
+       break;
+
+      case 8:  // ENCODER BUTTON LONG PRESS
+       break;
+
+      case 16:  // ENCODER BUTTON NULL
+       break;
+
+    }
+  }
+   while (stillSelecting == true);
+}
+
+// void menuSubMenuTemplate(){
+//   boolean stillSelecting = true;
+//   mydisp.clearScreen();
+//   mydisp.setFont(10);
+//   mydisp.setPrintPos(0, 0);
+//   mydisp.print("Max Throttle ");  
+//   mydisp.setPrintPos(0, 1);
+//  do{
+//     /*
+//     IF YOU WANT OTHER CODE GOING ON IN THE BACKGROUND
+//     WHILE WAITING FOR THE USER TO DO SOMETHING, PUT IT HERE
+//     */
+//     switch(read_encoder())
+//      {// analyze encoder response. Default is 0.
+//      case 1:  // ENCODER UP
+//         timeoutTime = millis()+menuTimeout;  // reset timeout timer
+//         mydisp.setPrintPos(0, 1);
+//         mydisp.print("value Here");
+//       break;
+
+//       case 2:    //ENCODER DOWN
+//         timeoutTime = millis()+menuTimeout;  // reset timeout timer
+//         mydisp.setPrintPos(0, 1);
+//         mydisp.print("value Here");
+//        break;
+
+//       case 4:  // ENCODER BUTTON SHORT PRESS
+//         timeoutTime = millis()+menuTimeout;  // reset timeout timer
+//         stillSelecting = false;
+//        break;
+
+//       case 8:  // ENCODER BUTTON LONG PRESS
+//        break;
+
+//       case 16:  // ENCODER BUTTON NULL
+//        break;
+
+//     }
+//   }
+//    while (stillSelecting == true);
+// }
+
+void printTargetSpeed()
+{
+  TargetSpeedInt = Target100 / 10;
+  targetSpeedWhole = TargetSpeedInt / 10;
+  targetSpeedDecimal = TargetSpeedInt %10;
+  int c = targetSpeedDecimal + targetSpeedWhole;
+  if (c < 0) mydisp.print ("-");
+  else mydisp.print (" ");
+  if (targetSpeedWhole < 0) targetSpeedWhole = -targetSpeedWhole;
+  mydisp.print (targetSpeedWhole);
+  mydisp.print (".");
+  if (targetSpeedDecimal<0)targetSpeedDecimal = -targetSpeedDecimal;
+  mydisp.print (targetSpeedDecimal);
+  if (mph) mydisp.print("MPH "); else mydisp.print("KPH ");
+}
 
 void DebugOutput()
 {
