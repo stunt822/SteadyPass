@@ -27,61 +27,55 @@
 #include <PID_v1.h>
 //----------------------------------
 
+byte CurrentVersion = 17;
+
 //*************INITIALIZING DEFINITIONS*************
 double Setpoint, Input, Output;
-
-//Default PROPORTION ON MEASURE MODE//
-//boolean adaptiveTuningMode = false;
-//PID myPID(&Input, &Output, &Setpoint,2,5,1,P_ON_M, DIRECT);
-//------------------------------------------------------------
-
 //ADAPTIVE TUNING MODE//
-boolean adaptiveTuningMode = true;
 double aggKp = 30, aggKi = 0.2, aggKd = 25; //NEED TO MAKE MENU OPTION FOR ADJUSTMENTS ON THE FLY
 double consKp = 15, consKi = 0.1, consKd = 12.5; //NEED TO MAKE MENU OPTION FOR ADJUSTMENTS ON THE FLY
 PID myPID(&Input, &Output, &Setpoint, consKp, consKi, consKd, DIRECT);
-//--------------------------------------------------------------------
-//TEST MENU
-//----------___----__---___---___--___--___---__---___----__-
+//------
+//MENU
+//------
 #define MOVECURSOR 1  // constants for indicating whether cursor should be redrawn
 #define MOVELIST 2  // constants for indicating whether cursor should be redrawn
 byte totalRows = 6;  // total rows of LCD
 byte totalCols = 1;  // total columns of LCD
 unsigned long timeoutTime = 0;  // this is set and compared to millis to see when the user last did something.
 const int menuTimeout = 10000; // time to timeout in a menu when user doesn't do anything.
-//----------___----__---___---___--___--___---__---___----__-
+//------
 
 
-float fltCurrentVersion = 17.02;
+
 TinyGPSPlus gps;                                //required for TinyGPSplus Library
 DigoleSerialDisp mydisp(9, 8, 10);              //Pin Config SPI | 9: data | 8:clock | 10: SS | you can assign 255 to SS, and hard ground SS pin on module
 unsigned long tachTime = 0, tachTimePrev = 0;   //keep track of tach time since power on
-boolean debug = false;                          //Debug mode
+boolean debug = true;                          //Debug mode
 boolean led = false;                            //LED on | off
 float voltage = 0, volt1, volt2;                //voltage value
-int cylCoeff = 6;                               //Number of Cylinders
+byte cylCoeff = 6;                               //Number of Cylinders
 boolean gpsMode = true;                         //GPS mode (true) or RPM mode (false)
-int mode = 0;                                   //Calculations mode 0=off 1=RPM 2=MPH/KPH
-int DisplayMode = 0;                            //display mode
-//------------------------------------------------------------
+byte mode = 0;                                   //Calculations mode 0=off 1=RPM 2=MPH/KPH
+//-------
 
 
-//*************PIN CONFIGURATION*************
-//0 and 1 = GPS  , int 2 and 3
-const int PinCLK = 2;             //int 1 == pin 2 encoder second pin
-const int PinDT = 3;              //int0 == pin3    // Used for reading DT signal of encoder
-const int PinSW = 4;              //encoder button
-const int servoPin = 5;           //servo PWM connected here
-const int speedPin = 6;           //reserve    int4 == pin 7? speed sensor
-const int rpmPin = 7;             //Engine currentRPM input connected here
+//*****PIN CONFIGURATION******
+//0 and 1 = GPS
+const byte PinCLK = 2;             //byte 1 == pin 2 encoder second pin
+const byte PinDT = 3;              //byte0 == pin3    // Used for reading DT signal of encoder
+const byte PinSW = 4;              //encoder button
+const byte servoPin = 5;           //servo PWM connected here
+const byte speedPin = 6;           //reserve    byte 4 == pin 7? speed sensor
+const byte rpmPin = 7;             //Engine currentRPM input connected here
 //8 and 9 - LCD, defined above
 //open - 10 - LCD SS?
-const int tempWtrPin = 11;        //temperature water
-const int tempAirPin = 12;        //temperature air
-const int voltPin = A0;           //battery voltage divider
+const byte tempWtrPin = 11;        //temperature water
+const byte tempAirPin = 12;        //temperature air
+const byte voltPin = A0;           //battery voltage divider
 //OPEN A1, A2, A3 - relay out?
-const int tempBoardPin = A4;      //temperature on control board
-const int lightsPin = A5;         //A5;  // lights on voltage divider
+const byte tempBoardPin = A4;      //temperature on control board
+const byte lightsPin = A5;         //A5;  // lights on voltage divider
 //-------------------------------------------------------------------
 
 
@@ -92,29 +86,20 @@ OneWire  air(tempAirPin);
 byte data[12];
 byte addr[8];
 byte present = 0;
-int i;
-int Temp, airTemp, wtrTemp;
-long checkTemp = 0;
+byte i;
+byte Temp, airTemp, wtrTemp;
 boolean celsius = true;
 //---------------------END TEMP-----------------------
 
 
 //*************SPEED INITIALIZATION*************
-volatile unsigned long speedPulse = 0;
-unsigned long speedPulsePrev = 0;
-unsigned long speedPulseCurrent = 0;
-unsigned long speedTime = 0;
-unsigned long speedTimePrev = 0;
-int speedValue = 0, speedWater = 0, speedGps = 0;
+int speedValue = 0, speedGps = 0;
 double speedGpsD = 0;
-long speedCoeff = 2250;
 int TargetSpeedInt, Target100 = 1250;
-int goodSteps = 15, goodStepsTemp;
 int speedBuffer[20];
 int avSpeed100;
-int SpeedCorrected = 0;
-int PrevSpeed = 0;
-int Speed100, delta100, pos100;  //int * 100 values
+//int SpeedCorrected = 0;
+int Speed100, pos100;  //int * 100 values
 boolean mph = true;
 unsigned long throttleCheck = 0;
 int targetSpeedWhole = TargetSpeedInt / 10;
@@ -129,15 +114,9 @@ volatile unsigned long duration = 0; // accumulates pulse width
 volatile unsigned long pulsecount = 0; //incremented by interrupt
 volatile unsigned long previousMicros = 0;
 int targetRPM = 3000;
-//long periodRPM = 1500;
-long checkRPM = 0;
-long periodSpeed = 3000;
-long checkSpeed = 0;
-int avRPM;
 //-----------------END RPM--------------------
 
 //*************SERVO INITIALIZATION*************
-static long virtualPosition = 0;
 boolean Reverse = false;
 Servo myservo;
 int minServo = 1050;
@@ -149,21 +128,13 @@ int S = 10;
 
 //*************ENCODER INITIALIZATION*************
 volatile boolean TurnDetected = false;
-volatile boolean up = false, prev_up = false;
-unsigned long interruptTime = 0;
-long prevtime = 0;
-long threshold = 7;
-int buttonTimes = 0;
-int inMenuPress = 0;
-int inMenuPressTarget = 7;
-int buttonTarget = 7;
-int buttonTimes2 = 0;
-int menuItem = 1;
-int idleCounter = 0, idleLimit = 2500;
+volatile boolean up = false;
+byte buttonTimes = 0;
+byte inMenuPress = 0;
+byte buttonTarget = 7;
+byte menuItem = 1;
 boolean mainDisplay = true;
-boolean modeOn = true;
 volatile long encoder = 0;
-volatile long prevEncoder = 0;
 int hours, minutes, seconds, hourOffset = 7;
 boolean speedMode = true;
 
@@ -171,7 +142,6 @@ boolean speedMode = true;
 
 
 //*************FUNCTION INITIALIZATION*************
-float readSpeed();                            //read GPS speed
 int   readRpm();                              //read/calculate currentRPM and reset counters
 void  rpmIntHandler();                        //called by interupt, increments counters
 static void smartDelay(unsigned long ms);     //Reads Data from GPS device
@@ -179,7 +149,6 @@ void  isr();                                  //encoder - Interrupt service rout
 void  PIDCalculations();                      //Calulate Speed Adjustments based on MPH or RPM depending on mode
 void  MainDisplay();                          //Runs the Main LCD screen
 void  Menu();                                 //runs the USER menu options
-void  DebugOutput();                          //Outputs addition information by Serial output for diagnostics and Debuging
 int read_encoder();                          //Reads knob up/down/press/longpress for menu cases
 //-----------------END--------------------
 
@@ -189,123 +158,86 @@ int read_encoder();                          //Reads knob up/down/press/longpres
 void setup()
 {
   if (debug)Serial.begin(9600);
+  delay (1000);
   Serial1.begin(9600);   //GPS device
-  delay (5000);
+
   //digole LCD init section with name and version
+  delay (2000);
   mydisp.begin(); mydisp.clearScreen();  delay(100);   mydisp.print("  ................. "); delay(100); mydisp.clearScreen();  delay(100);   mydisp.print("."); delay(100);
   mydisp.print("   ");  delay(100);  mydisp.print("STEADYPASS");    delay(1000);
-  //mydisp.setRot180(); //uncomment to rotate
   mydisp.setFont(10);
   mydisp.setPrintPos(0, 4);
-  mydisp.print("     fw: ");
-  mydisp.print(fltCurrentVersion);
-  delay(7000);
+  mydisp.print(" Version: ");
+  mydisp.print(CurrentVersion);
+  delay(5000);
   mydisp.clearScreen();
-  mydisp.print("SATELLITE SEARCH..");
+  mydisp.print("ACQUIRING SIGNAL");
+
   pinMode(PinCLK, INPUT);                     //rotary encoder
   pinMode(PinDT, INPUT);                      //rotary encoder
   pinMode(PinSW, INPUT_PULLUP);               //rotary encoder button
   attachInterrupt (0, isr, RISING);           // interrupt 0 pin 3 for encoder
   //pinMode(7,INPUT);                         //RPM pin, high when no pulse.
-  attachInterrupt(4, rpmIntHandler, CHANGE);  //  RPM - pin 7 is gronded on pulse
+  attachInterrupt(4, rpmIntHandler, CHANGE);  //  RPM - pin 7 is grounded on pulse
   myservo.attach(servoPin);                   // attaches the servo on pin  to the servo object
   myservo.writeMicroseconds(pos);
-
-
   //PID Variables//
   Input = Speed100;
   Setpoint = Target100;
   //Turn on PID//
   myPID.SetMode(AUTOMATIC);
-  //----------------------
 
 
   //******************LOADING SAVED SETTINGS*******************
-  if (EEPROM.read(11) != 255) cylCoeff = EEPROM.read(11);
-//  if (EEPROM.read(12) != 255) aggKp = EEPROM.read(12);
-//  if (EEPROM.read(13) != 255) aggKd = EEPROM.read(13);
-//  if (EEPROM.read(14) != 255) aggKi = EEPROM.read(14);
-//  if (EEPROM.read(22) != 255) consKp = EEPROM.read(22);
-//  if (EEPROM.read(23) != 255) consKd = EEPROM.read(23);
-//  if (EEPROM.read(24) != 255) consKi = EEPROM.read(24);
-  if (EEPROM.read(15) != 255) hourOffset = 24 - EEPROM.read(15);
-  if (EEPROM.read(16) != 255) maxServo = 10 * EEPROM.read(16);
-  if (EEPROM.read(17) != 255) minServo = 10 * EEPROM.read(17);
-  if (EEPROM.read(18) != 255) mph = EEPROM.read(18);
-  if (EEPROM.read(29) != 255) celsius = EEPROM.read(29);
-  if (EEPROM.read(30) != 255) Target100 = EEPROM.read(30) * 100;
-  if (EEPROM.read(31) != 255) Reverse = EEPROM.read(31);
+  // if (EEPROM.read(11) != 255) cylCoeff = EEPROM.read(11);
+  // if (EEPROM.read(12) != 255) aggKp = EEPROM.read(12);
+  // if (EEPROM.read(13) != 255) aggKd = EEPROM.read(13);
+  // if (EEPROM.read(14) != 255) aggKi = EEPROM.read(14);
+  // if (EEPROM.read(22) != 255) consKp = EEPROM.read(22);
+  // if (EEPROM.read(23) != 255) consKd = EEPROM.read(23);
+  // if (EEPROM.read(24) != 255) consKi = EEPROM.read(24);
+  // if (EEPROM.read(15) != 255) hourOffset = 24 - EEPROM.read(15);
+  // if (EEPROM.read(16) != 255) maxServo = 10 * EEPROM.read(16);
+  // if (EEPROM.read(17) != 255) minServo = 10 * EEPROM.read(17);
+  // if (EEPROM.read(18) != 255) mph = EEPROM.read(18);
+  // if (EEPROM.read(29) != 255) celsius = EEPROM.read(29);
+  // if (EEPROM.read(30) != 255) Target100 = EEPROM.read(30) * 100;
+  // if (EEPROM.read(31) != 255) Reverse = EEPROM.read(31);
   //----------------LOADED VALUES COMPLETE-------------------
 
   //******************LOADING GPS CONFIGURATION*******************
   //Serial1.println("$PMTK314,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*29");   //Sets GPS to GTV only
   Serial1.println("$PMTK314,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*29");     //Sets GPS to RMC only
+  delay (500);
   Serial1.println("$PMTK220,200*2C");  //Set GPS to 5hz
-  //----------------GPS CONFIGURATION COMPLETE-------------------
+  delay (500);
 }
 
-//================================================================================================|
-//------------------------------------ STARTUP COMPLETE ------------------------------------------|
-//================================================================================================|
-
-
-
-
-
-
-//************************************************************************************************|
-//*****************************************RUN MAIN***********************************************|
-//************************************************************************************************|
+//**RUN MAIN**|
 void loop ()
 {
-  if (led)
-  {
-    digitalWrite(13, LOW);
-    led = false;
-  }
-  else
-  {
-    digitalWrite(13, HIGH);
-    led = true;
-  }
+  if (led) {digitalWrite(13, LOW); led = false;}
+  else {digitalWrite(13, HIGH); led = true;}
+  smartDelay(50);
+  if (gps.speed.isValid()){speedGpsD = gps.speed.mph();}
 
-  //
-  smartDelay(1);
-  if (gps.speed.isValid())
-  {
-    speedGpsD = gps.speed.mph();
-  }
-  else
-  {
-    //possible enhancment to switch to RPM calculation if GPS signal lost for extended time.
-  }
   Speed100 = 100 * speedGpsD;
-
   currentRPM = readRpm();
 
-  //Get Total Run time since powerup//
-  if (currentRPM > 50)
-  {
-    tachTime += millis() - tachTimePrev;
-    tachTimePrev = millis();
-  }
-  else
-  {
-    tachTimePrev = millis();
-  }
+  // //Get Total Run time since powerup//
+  // if (currentRPM > 50) {tachTime += millis() - tachTimePrev; tachTimePrev = millis();}
+  // else {tachTimePrev = millis();}
 
   //THROTTLE OVER LIMIT warning//
-  if (pos == maxServo)
-  {
-    if (throttleCheck < millis())
-    {
+  if (pos == maxServo){
+    if (throttleCheck < millis()){
       throttleCheck = millis() + 2000;
       mydisp.setFont(18);
       mydisp.setPrintPos(0, 0);
       mydisp.print(" ! DECREASE !     ");
       mydisp.setPrintPos(0, 1);
       mydisp.print(" ! THROTTLE !     ");
-      smartDelay(1);
+      smartDelay(50);
       if (gps.speed.isValid())
       {
         speedGpsD = gps.speed.mph();
@@ -317,51 +249,34 @@ void loop ()
       mydisp.print("                  ");
     }
   }
-
-
-  //STORE LAST 10 GPS SPEEDS//
-  for (int i = 10; i > 0; i--)
-  {
-    speedBuffer[i] = speedBuffer[i - 1];
-    speedBuffer[0] = Speed100;
-    avSpeed100 = 0;
-  }
-  //CALCULATE AVERAGE SPEED//
-  for (int i = 5; i >= 0; i--)
-  {
-    avSpeed100 += speedBuffer[i];
-    avSpeed100 = avSpeed100 / 6;
-  }
-  //SOTRE LAST 10 currentRPM VALUES
-  for (int i = 10; i > 0; i--)
-  {
-    rpmBuffer[i] = rpmBuffer[i - 1];
-    rpmBuffer[0] = currentRPM;
-  }
+  // //STORE LAST 10 GPS SPEEDS//
+  // for (i = 10; i > 0; i--){
+  //   speedBuffer[i] = speedBuffer[i - 1];
+  //   speedBuffer[0] = Speed100;
+  //   avSpeed100 = 0;
+  // }
+  // if (debug)Serial.print("beforeAVRspeed");
+  // //CALCULATE AVERAGE SPEED//
+  // for (i = 5; i >= 0; i--){
+  //   avSpeed100 += speedBuffer[i];
+  //   avSpeed100 = avSpeed100 / 6;
+  // }
+  //  if (debug)Serial.print("afterAVR");
+  // //STORE LAST 10 currentRPM VALUES
+  // for (i = 10; i > 0; i--){
+  //   rpmBuffer[i] = rpmBuffer[i - 1];
+  //   rpmBuffer[0] = currentRPM;
+  // }
 
   //RUN CURRENT CALCULATION MODE//
-  if (mode == 0)
-  {
-    pos = minServo;
-  }
-  else
-  {
-    if (mode == 1)
-    {
-      speedMode = false;
-    }
-    else
-    {
-      speedMode = true;
-    }
+  if (mode == 0) {pos = minServo;}
+  else{
+    if (mode == 1) {speedMode = false;}
+    else {speedMode = true;}
     PIDCalculations();
   }
-
   if (Reverse) myservo.writeMicroseconds( minServo + maxServo - pos);
   else  myservo.writeMicroseconds(pos);
-
- // if (debug)  DebugOutput();
-
 
   //DISPLAY MAIN OUTPUT section
   TargetSpeedInt = Target100 / 10;
@@ -369,118 +284,30 @@ void loop ()
 
   if (mainDisplay) MainDisplay();  //DISPLAY MAIN OUTPUT
 
-
-
-  if (TurnDetected)  // do this only if rotation was detected - change target
-  {
-    //interruptTime = millis();
+  if (TurnDetected){
     if (mode == 2) Target100 += 10 * encoder;
     if (mode == 1) targetRPM += 10 * encoder;
     encoder = 0;
     TurnDetected = false;          // do NOT repeat IF loop until new rotation detected
   }
 
-
-  if (digitalRead(PinSW) == LOW)   //menu enter
-  {
-    buttonTimes++;
-  }
+  //menu enter
+  if (digitalRead(PinSW) == LOW) {buttonTimes++;}
   else {
-    if (buttonTimes > 0)
-    { mode++;  if (mode > 2) mode = 0;
-      if (!mainDisplay) idleCounter = 0; mainDisplay = true; mydisp.clearScreen();
+    if (buttonTimes > 0){ 
+      mode++;  
+      if (mode > 2) mode = 0;
     }
     buttonTimes = 0;
   }
 
-  if (buttonTimes > buttonTarget)     {
+  if (buttonTimes > buttonTarget){
     mydisp.clearScreen();
     mydisp.setFont(10);
     delay(500);
   }
 
-  while (buttonTimes > buttonTarget)      Menu();     //menu will loop untill buttonTimes is set to 0
-
-
-  //SCREEN SAVER ACTIVATION PARAMETERS
-  if (currentRPM < 50) idleCounter++; else {
-    idleCounter = 0;
-  }
-
-  if ((idleCounter > idleLimit) && mainDisplay)
-  {
-    mainDisplay = false;
-    mydisp.clearScreen();
-    delay(300);
-  }
-  if (!mainDisplay)
-  {
-    mydisp.setFont(120);
-    mydisp.setPrintPos(0, 0);
-    mydisp.setTextPosOffset(20, 15);
-    mydisp.print(hours);
-    mydisp.print(":");
-    if (minutes < 10)
-    {
-      mydisp.print("0");
-    }
-    mydisp.print(minutes);
-    mydisp.print("  ");
-    mydisp.setFont(6);
-    mydisp.setPrintPos(0, 2);
-    mydisp.setTextPosOffset(0, 0);
-    mydisp.setFont(10);
-    mydisp.setPrintPos(0, 0);
-    mydisp.print("Tach today ");
-    mydisp.print(tachTime / 60000);
-    mydisp.println(" min");
-    delay(20);
-    mydisp.setPrintPos(0, 6);
-    mydisp.print("UNT ");
-    mydisp.print(Temp);
-    if (celsius)
-    {
-      mydisp.print("c");
-    }
-    else
-    {
-      mydisp.print("F");
-    }
-    mydisp.print(" Batt ");
-    mydisp.print(voltage);
-    mydisp.print("v ");
-    mydisp.setPrintPos(0, 5);
-    mydisp.print("WTR ");
-    mydisp.print(wtrTemp);
-    if (celsius)
-    {
-      mydisp.print("c");
-    }
-    else
-    {
-      mydisp.print("F");
-    }
-    mydisp.print(" AIR ");
-    mydisp.print(airTemp);
-    if (celsius)
-    {
-      mydisp.print("c ");
-    }
-    else
-    {
-      mydisp.print("F ");
-    }
-
-    if (currentRPM > 500)
-    {
-      idleCounter = 0;
-      mainDisplay = true;
-      mydisp.clearScreen();
-      delay(100);
-    }
-
-  }
-  //SCREEN SAVER END
+  while (buttonTimes > buttonTarget)      Menu();
 
   /*
     //tweak on the fly  - for tuning from PC
@@ -512,12 +339,7 @@ void loop ()
   //  Serial.print("Kd: ");Serial.print(Kd);Serial.print(" ");
   //  Serial.print("Ko: ");Serial.print(Ko);Serial.println();
 }
-//================================================================================================|
-//-------------------------------------------MAIN END---------------------------------------------|
-//================================================================================================|
-
-
-
+//----MAIN END----|
 
 
 //*******************************************************************
@@ -536,11 +358,9 @@ static void smartDelay(unsigned long ms)
       gps.encode(Serial1.read());
     }
   }
-  while ( !(gps.speed.isUpdated())  );                  //while (millis() - start < ms);
+  while ( (!gps.speed.isUpdated())  );                  //while (millis() - start < ms);
 }
 //End Function
-//-------------------------------------------------------------------
-
 
 //*******************************************************************
 /* FUNCTION: readRPM()
@@ -559,8 +379,6 @@ int readRpm()
   return (freqq);
 }
 //End Function
-//-------------------------------------------------------------------
-
 
 //*******************************************************************
 /* FUNCTION: rpmIntHandler()
@@ -576,8 +394,6 @@ void rpmIntHandler()
   pulsecount++;
 }
 //End Function
-//-------------------------------------------------------------------
-
 
 //*******************************************************************
 /* FUNCTION: isr()
@@ -600,8 +416,6 @@ void isr()
   TurnDetected = true;
 }
 //End Function
-//-------------------------------------------------------------------
-
 
 //*******************************************************************
 /* FUNCTION: PIDCalculations
@@ -612,21 +426,18 @@ void isr()
 void PIDCalculations()
 {
   //PID INPUTS//
-  if (speedMode)
-  {
+  if (speedMode){
     Input = Speed100;
     Setpoint = Target100;
   }
-  else
-  {
+  else{
     Input = currentRPM;
     Setpoint = targetRPM;
   }
-
-  //ADAPTIVE TUNING CALULATIONS//
-  if (adaptiveTuningMode)
-  {
+    if (debug)Serial.print(Input);
+    if (debug)Serial.print(Setpoint);
     double gap = abs(Setpoint - Input); //distance away from setpoint
+    if (debug)Serial.print(gap);
     if (gap < 10)
     { //we're close to setpoint, use conservative tuning parameters
       myPID.SetTunings(consKp, consKi, consKd);
@@ -635,31 +446,18 @@ void PIDCalculations()
     {
       //we're far from setpoint, use aggressive tuning parameters
       myPID.SetTunings(aggKp, aggKi, aggKd);
+
     }
     myPID.Compute();
     pos100 = Output;
-  }
-  //PROPORTION ON MEASURE MODE//
-  // else
-  // {
-  //   myPID.Compute();
-  //   pos100 = Output;
-  // }
-  //----------------------------
-
-  pos100 = constrain(pos100, minServo * 10, maxServo * 10);
-  pos = pos100 / 10;
+    pos100 = constrain(pos100, minServo * 10, maxServo * 10);
+    pos = pos100 / 10;
+     if (debug)Serial.print(pos);
 }
 //End Function
-//-------------------------------------------------------------------
-
-
-
 
 //*******************************************************************
 /* FUNCTION:  MainDisplay()
-   INPUT: Everything that displays on the main screen
-   RETURN: OUtputs the main display
    DESCTRIPTION: This displays everything that you see
 */
 void MainDisplay()
@@ -673,12 +471,6 @@ void MainDisplay()
   mydisp.setFont(10);
   mydisp.setPrintPos(0, 1);
   mydisp.print(hours); mydisp.print(":"); if (minutes < 10) mydisp.print("0"); mydisp.print(minutes); mydisp.print(":"); if (seconds < 10) mydisp.print("0"); mydisp.print(seconds); mydisp.print("            ");
-
-  //Blank SPace?//
-  mydisp.setFont(10);
-  mydisp.setPrintPos(10, 2);
-  mydisp.setTextPosOffset(0, -6);
-  mydisp.setFont(6);
 
   //print word "GPS"//
   mydisp.setFont(10);
@@ -702,9 +494,6 @@ void MainDisplay()
   mydisp.print("  ");
 
   //Print word depending on mode selection//
-  // 0 Prints "OFF"
-  // 1 Prints TargetRPM & "RPM"
-  // 2 Prints TargetSpeedInt/10 & TargetSpeedInt%10 & either "MPH" or "KPH"
   mydisp.setFont(18);
   mydisp.setPrintPos(7, 0);
   if (mode == 0) mydisp.print("  OFF  ");
@@ -724,9 +513,6 @@ void MainDisplay()
   mydisp.print("V ");  mydisp.print(voltage); mydisp.print("  ");
 
   // Prints Water Temp and Air Temp
-  /* mydisp.setPrintPos(0, 3);
-    mydisp.print("UNT "); mydisp.print(Temp); if (celsius) mydisp.print("c "); else mydisp.print("F ");
-  */
   mydisp.setPrintPos(0, 4);
   mydisp.print("WTR "); mydisp.print(wtrTemp); if (celsius)  mydisp.print("c  "); else mydisp.print("F ");
   mydisp.setPrintPos(0, 5);
@@ -736,20 +522,12 @@ void MainDisplay()
   mydisp.setPrintPos(0, 6);
   mydisp.print("RPM "); mydisp.print(currentRPM); mydisp.print("    ");
 
-
-  /*NOT SURE WHAT THIS WAS FOR
-    //Main speed output
-  	//mydisp.setFont(123);
-  	mydisp.setPrintPos(0, 0);
-    //*/
-
   //Prints the Main Speed value On Display
   mydisp.setFont(203);
   mydisp.setPrintPos(0, 0);
   mydisp.setTextPosOffset(46, 22);
   if (speedValue < 100) mydisp.print('0');
   mydisp.print(speedValue / 10);
-  //mydisp.setFont(51);
   mydisp.setFont(201);
   mydisp.setPrintPos(0, 0);
   mydisp.setTextPosOffset(111, 43);
@@ -760,7 +538,6 @@ void MainDisplay()
 }
 //End Function
 //-------------------------------------------------------------------
-
 
 void Menu(){
   while (digitalRead(PinSW) == LOW){}
@@ -784,71 +561,52 @@ void Menu(){
     "Default Target Speed",
     "Unit of Measure",
     "Temp",
-    "Debug",
      ""
   };
   while (menuItems[totalMenuItems] != ""){
-    totalMenuItems++;  // count how many items are in list.
-  }
-  totalMenuItems--;  //subtract 1 so we know total items in array.
-  mydisp.clearScreen();  // clear the screen so we can paint the menu.
-  boolean stillSelecting = true;  // set because user is still selecting.
+    totalMenuItems++;}
+  totalMenuItems--;
+  mydisp.clearScreen();
+  boolean stillSelecting = true;
   timeoutTime = millis() + menuTimeout; // set initial timeout limit. 
 
   do{
-    /*
-    IF YOU WANT OTHER CODE GOING ON IN THE BACKGROUND
-    WHILE WAITING FOR THE USER TO DO SOMETHING, PUT IT HERE
-    */
-   
+
     switch(read_encoder()) 
-    {// analyze encoder response. Default is 0.
-    case 0:  // ENCODER none
-      if (debug) {Serial.println("case 0");}
-      break; 
-   
+    {  
     case 1:  // ENCODER UP
-    if (debug) {Serial.println("case 1");}
-      timeoutTime = millis()+menuTimeout;  // reset timeout timer
-      //  move menu up one.
-      if(cursorPosition == 0 && topItemDisplayed > 0)  //  Cursor is at top of LCD, and there are higher menu items still to be displayed.
+      timeoutTime = millis()+menuTimeout;
+      if(cursorPosition == 0 && topItemDisplayed > 0)
       {
-        topItemDisplayed--;  // move top menu item displayed up one. 
-        redraw = MOVELIST;  // redraw the entire menu
+        topItemDisplayed--;
+        redraw = MOVELIST;
       }
-      // if cursor not at top, move it up one.
       if(cursorPosition>0)
       {
-        cursorPosition--;  // move cursor up one.
-        redraw = MOVECURSOR;  // redraw just cursor.
+        cursorPosition--;
+        redraw = MOVECURSOR;
       }
       break;
 
     case 2:    //ENCODER DOWN
-     if (debug) {Serial.println("case 2");}
-      timeoutTime = millis()+menuTimeout;  // reset timeout timer
-      // this sees if there are menu items below the bottom of the LCD screen & sees if cursor is at bottom of LCD 
+      timeoutTime = millis()+menuTimeout;
       if((topItemDisplayed + (totalRows-1)) < totalMenuItems && cursorPosition == (totalRows-1))
       {
-        topItemDisplayed++;  // move menu down one
-        redraw = MOVELIST;  // redraw entire menu
+        topItemDisplayed++;
+        redraw = MOVELIST;
       }
-      if(cursorPosition<(totalRows-1))  // cursor is not at bottom of LCD, so move it down one.
+      if(cursorPosition<(totalRows-1))
       {
-        cursorPosition++;  // move cursor down one
-        redraw = MOVECURSOR;  // redraw just cursor.
+        cursorPosition++;
+        redraw = MOVECURSOR;
       }
       break;
 
     case 4:  // ENCODER BUTTON SHORT PRESS
-     if (debug) {Serial.println("case 4");}
-      timeoutTime = millis()+menuTimeout;  // reset timeout timer
-      switch(topItemDisplayed + cursorPosition) // adding these values together = where on menuItems cursor is.
+      timeoutTime = millis()+menuTimeout;
+      switch(topItemDisplayed + cursorPosition) // Cursor Location
       {
-      //  put code to be run when specific item is selected in place of the Serial.print filler.
-      // the Serial.print code can be removed, but DO NOT change the case & break structure. 
-      // (Obviously, you should have as many case instances as you do menu items.)
-      case 0:  // menu item 1 selected
+        case 0:
         minThrottleMenu();
         redraw = MOVELIST;
       break;
@@ -884,10 +642,6 @@ void Menu(){
         tempUnitMenu();
         redraw = MOVELIST;
       break;
-      case 9:  // menu item10 selected
-        debugMenu();
-        redraw = MOVELIST;
-      break;
         // add as many "case #:" as items. Could put 
         //  line separators in menu and leave out the 
         //  corresponding case, which would mean that nothing
@@ -895,64 +649,56 @@ void Menu(){
       }
       break;
       
-    case 8:  // encoder button was pushed for long time. This corresponds to "Back" or "Cancel" being pushed.
-     if (debug) {Serial.println("case 8");}
+    case 8:  //LONG PRESS
       stillSelecting = false;
       buttonTimes = 0;
       Serial.println("Button held for a long time");
       break;
 
-    case 16:  // encoder button is null
+    case 16:
       break;
 
     }
 
-    switch(redraw){  //  checks if menu should be redrawn at all.
-    case MOVECURSOR:  // Only the cursor needs to be moved.
-      redraw = false;  // reset flag.
-      if (cursorPosition > totalMenuItems) // keeps cursor from moving beyond menu items.
+    switch(redraw){
+    case MOVECURSOR:
+      redraw = false;
+      if (cursorPosition > totalMenuItems)
         cursorPosition = totalMenuItems;
-      for(i = 0; i < (totalRows); i++){  // loop through all of the lines on the LCD
+      for(i = 0; i < (totalRows); i++){
         mydisp.setFont(10);
         mydisp.setPrintPos(0, i);
-        mydisp.print(" ");                      // and erase the previously displayed cursor
+        mydisp.print(" ");
         mydisp.setPrintPos((totalCols-1), i);
         mydisp.print(" ");
       }
       mydisp.setFont(10);
-      mydisp.setPrintPos(0,cursorPosition);      // go to mydisp line where new cursor should be & display it.
+      mydisp.setPrintPos(0,cursorPosition);
       mydisp.print(">");
-      break;  // MOVECURSOR break.
+      break;
 
-    case MOVELIST:  // the entire menu needs to be redrawn
-      redraw=MOVECURSOR;  // redraw cursor after clearing LCD and printing menu.
-      mydisp.clearScreen(); // clear screen so it can be repainted.
-      if(totalMenuItems>((totalRows-1))){  // if there are more menu items than LCD rows, then cycle through menu items.
+    case MOVELIST:
+      redraw=MOVECURSOR;
+      mydisp.clearScreen();
+      if(totalMenuItems>((totalRows-1))){
         for (i = 0; i < (totalRows); i++){
           mydisp.setFont(10);
           mydisp.setPrintPos(1,i);
           mydisp.print(menuItems[topItemDisplayed + i]);
         }
       }
-      else{  // if menu has less items than LCD rows, display all available menu items.
+      else{
         for (i = 0; i < totalMenuItems+1; i++){
           mydisp.setFont(10);
           mydisp.setPrintPos(1,i);
           mydisp.print(menuItems[topItemDisplayed + i]);
         }
       }
-      break;  // MOVELIST break
+    break;
     }
 
     if (timeoutTime<millis()){  // user hasn't done anything in awhile
       stillSelecting = false;  // tell loop to bail out.
-      /*
-      in my main code, I had a function that
-       displayed a default screen on the LCD, so
-       I would put that function here, and it would
-       bail out to the default screen.
-       defaultScreen();
-       */
     }
   } 
   while (stillSelecting == true);  //
@@ -970,13 +716,11 @@ int read_encoder(){
   if (TurnDetected){
     if (encoder > 0) {
       encoder = 0;
-      if (debug) {Serial.println("UP");}
       TurnDetected = false;
       return btnUp;
     }
     else if (encoder < 0){
       encoder = 0;
-      if (debug) {Serial.println("DOWN");}
       TurnDetected = false;
       return btnDown;
     }
@@ -988,12 +732,10 @@ int read_encoder(){
     if (digitalRead(PinSW) == LOW)
       {
          inMenuPress++;
-         if (debug) {Serial.println("press held: ");Serial.println(inMenuPress);}
           delay(300);
       }
     else if (inMenuPress > 0) {
         inMenuPress = 0;
-        if (debug) {Serial.println("SHORT PRESS");}
           mydisp.clearScreen();
           mydisp.setFont(20);
           mydisp.setPrintPos(0,0);
@@ -1004,9 +746,8 @@ int read_encoder(){
       }
     else { return btnNull; }
     
-    if (inMenuPress > inMenuPressTarget){
+    if (inMenuPress > buttonTarget){
         inMenuPress = 0;
-        if (debug) {Serial.println("LONG PRESS");}
           mydisp.clearScreen();
           mydisp.setFont(20);
           mydisp.setPrintPos(0,0);
@@ -1027,16 +768,11 @@ void minThrottleMenu(){
   mydisp.print("Min Throttle ");  
   mydisp.setPrintPos(0, 1);
   if (Reverse) mydisp.print(minServo); else mydisp.print(maxServo);  mydisp.print("    ");
- do{
-    /*
-    IF YOU WANT OTHER CODE GOING ON IN THE BACKGROUND
-    WHILE WAITING FOR THE USER TO DO SOMETHING, PUT IT HERE
-    */
-    
+ do{   
     switch(read_encoder())
-    {// analyze encoder response. Default is 0.
+    {
       case 1:  // ENCODER UP
-        timeoutTime = millis()+menuTimeout;  // reset timeout timer
+        timeoutTime = millis()+menuTimeout;
         if (Reverse) minServo +=10; else maxServo+=10;
         mydisp.setPrintPos(0, 1);
         if (Reverse) mydisp.print(minServo); else mydisp.print(maxServo);  mydisp.print("    ");
@@ -1045,7 +781,7 @@ void minThrottleMenu(){
         break;
 
       case 2:    //ENCODER DOWN
-        timeoutTime = millis()+menuTimeout;  // reset timeout timer
+        timeoutTime = millis()+menuTimeout;
         if (Reverse) minServo -=10; else maxServo -=10;
         mydisp.setPrintPos(0, 1);
         if (Reverse) mydisp.print(minServo); else mydisp.print(maxServo);  mydisp.print("    ");
@@ -1054,7 +790,7 @@ void minThrottleMenu(){
         break;
 
       case 4:  // ENCODER BUTTON SHORT PRESS
-        timeoutTime = millis()+menuTimeout;  // reset timeout timer
+        timeoutTime = millis()+menuTimeout;
         stillSelecting = false;
         break;
 
@@ -1125,7 +861,7 @@ void testThrottleMenu(){
   mydisp.setPrintPos(0, 1);
  do{
     mydisp.print("("); if (Reverse) mydisp.print(minServo + maxServo - pos); else mydisp.print(pos); mydisp.print(")     ");
-    delay(10);
+    delay(50);
     if (pos <= minServo) S = 1;
     if (pos >= maxServo) S = -1;
     pos += 10 * S;
@@ -1167,7 +903,7 @@ void reverseServoModeMenu(){
   mydisp.print("Reverse Servo Mode");  
   mydisp.setPrintPos(0, 1);
   if (Reverse) mydisp.print("Reverse Mode");
-  if !(Reverse) mydisp.print("Normal Mode");
+  if (!Reverse) mydisp.print("Normal Mode");
 
  do{
     switch(read_encoder())
@@ -1176,9 +912,9 @@ void reverseServoModeMenu(){
         timeoutTime = millis()+menuTimeout;
         mydisp.setPrintPos(0, 1);
         if (Reverse){
-          mydisp.print("Normal Mode");
+          mydisp.print("Normal Mode  ");
           Reverse = false;}
-        if !(Reverse) {
+        else {
           mydisp.print("Reverse Mode");
           Reverse = true;}
         break;
@@ -1189,7 +925,7 @@ void reverseServoModeMenu(){
         if (Reverse){
           mydisp.print("Normal Mode");
           Reverse = false;}
-        if !(Reverse) {
+        else {
           mydisp.print("Reverse Mode");
           Reverse = true;}
         break;
@@ -1220,35 +956,42 @@ void cylinderCountMenu(){
  do{
 
     switch(read_encoder())
-    {// analyze encoder response. Default is 0.
+    {
       case 1:  // ENCODER UP
-        timeoutTime = millis()+menuTimeout;  // reset timeout timer
+        timeoutTime = millis()+menuTimeout;
         mydisp.setPrintPos(0, 1);
         if (cylCoeff < 8){
           cylCoeff = cylCoeff + 2;
-          mydisp.print(cylCoeff);}
+          mydisp.print(cylCoeff);
+          mydisp.setPrintPos(0, 2);
+          mydisp.print("                ");
+        }
         else {
           cylCoeff = 8;
-          mydisp.print(cylCoeff);}
+          mydisp.print(cylCoeff);
           mydisp.setPrintPos(0, 2);
           mydisp.print("Max Cylinders");
+        }
         break;
 
       case 2:    //ENCODER DOWN
-        timeoutTime = millis()+menuTimeout;  // reset timeout timer
+        timeoutTime = millis()+menuTimeout;
         mydisp.setPrintPos(0, 1);
         if (cylCoeff > 4){
           cylCoeff = cylCoeff - 2;
-          mydisp.print(cylCoeff);}
+          mydisp.print(cylCoeff);
+          mydisp.setPrintPos(0, 2);
+          mydisp.print("                ");
+        }
         else {
           cylCoeff = 4;
-          mydisp.print(cylCoeff);}
+          mydisp.print(cylCoeff);
           mydisp.setPrintPos(0, 2);
-          mydisp.print("Min Cylinders");
+          mydisp.print("Min Cylinders");}
         break;
 
       case 4:  // ENCODER BUTTON SHORT PRESS
-        timeoutTime = millis()+menuTimeout;  // reset timeout timer
+        timeoutTime = millis()+menuTimeout;
         stillSelecting = false;
         break;
 
@@ -1265,69 +1008,61 @@ void cylinderCountMenu(){
 
 void timeZoneMenu(){
   boolean stillSelecting = true;
+  hours =   gps.time.hour();
+  minutes = gps.time.minute();
+  seconds = gps.time.second();
   mydisp.clearScreen();
   mydisp.setFont(10);
   mydisp.setPrintPos(0, 0);
   mydisp.print("Time Zone Offset ");  
+  mydisp.setPrintPos(0, 1);
+  mydisp.print(hourOffset);
+  mydisp.setPrintPos(0, 2);
+  mydisp.print(hours); mydisp.print(":"); if (minutes < 10) mydisp.print("0"); mydisp.print(minutes); mydisp.print(":"); if (seconds < 10) mydisp.print("0"); mydisp.print(seconds); mydisp.print("   ");
  do{
-    /*
-    IF YOU WANT OTHER CODE GOING ON IN THE BACKGROUND
-    WHILE WAITING FOR THE USER TO DO SOMETHING, PUT IT HERE
-    */
+    
     switch(read_encoder())
-    {// analyze encoder response. Default is 0.
+    {
       case 1:  // ENCODER UP
-        timeoutTime = millis()+menuTimeout;  // reset timeout timer
+        hours = gps.time.hour(); + hourOffset;
+        timeoutTime = millis()+menuTimeout;
+        if (hourOffset < 12){hourOffset = hourOffset + 1;}
+        else {hourOffset = 12;}
         mydisp.setPrintPos(0, 1);
-        if (hourOffset < 12){
-          hourOffset = hourOffset + 1;
-        }
-        else {
-          hourOffset = 12;
-        }
-        mydisp.setPrintPos(0, 2);
         if (hourOffset > 0){
-          mydisp.print("+"); mydisp.print(hourOffset);
+          mydisp.print("+"); mydisp.print(hourOffset); mydisp.print("   ");
         }
         else if (hourOffset = 0){
-          mydisp.print(hourOffset);
+          mydisp.print(hourOffset); mydisp.print("    ");
         }
         else{
           mydisp.print("-"); mydisp.print(hourOffset);
         }
-        hours = gps.time.hour() + hourOffset;
-        mydisp.setPrintPos(0, 3);
-        mydisp.print("Current Time: ");
-        mydisp.print(hours); mydisp.print(":"); if (minutes < 10) mydisp.print("0"); mydisp.print(minutes); mydisp.print(":"); if (seconds < 10) mydisp.print("0"); mydisp.print(seconds);
+        mydisp.setPrintPos(0, 2);
+        mydisp.print(hours); mydisp.print(":"); if (minutes < 10) mydisp.print("0"); mydisp.print(minutes); mydisp.print(":"); if (seconds < 10) mydisp.print("0"); mydisp.print(seconds); mydisp.print("   ");
       break;
 
-      case 2:    //ENCODER DOWN
-        timeoutTime = millis()+menuTimeout;  // reset timeout timer
+      case 2:  //ENCODER DOWN
+        hours = gps.time.hour(); + hourOffset;
+        timeoutTime = millis()+menuTimeout;
+        if (hourOffset > -12){hourOffset += -1;}
+        else {hourOffset = -12;}
         mydisp.setPrintPos(0, 1);
-        if (hourOffset > -12){
-          hourOffset = hourOffset - 1;
-        }
-        else {
-          hourOffset = -12;
-        }
-        mydisp.setPrintPos(0, 2);
         if (hourOffset > 0){
-          mydisp.print("+"); mydisp.print(hourOffset);
+          mydisp.print("+"); mydisp.print(hourOffset);mydisp.print("   ");
         }
         else if (hourOffset = 0){
-          mydisp.print(hourOffset);
+          mydisp.print(hourOffset); mydisp.print("    ");
         }
         else{
-          mydisp.print("-"); mydisp.print(hourOffset);
+          mydisp.print("-"); mydisp.print(hourOffset); mydisp.print("   ");
         }
-        hours = gps.time.hour() + hourOffset;
-        mydisp.setPrintPos(0, 3);
-        mydisp.print("Current Time: ");
-        mydisp.print(hours); mydisp.print(":"); if (minutes < 10) mydisp.print("0"); mydisp.print(minutes); mydisp.print(":"); if (seconds < 10) mydisp.print("0"); mydisp.print(seconds);
+        mydisp.setPrintPos(0, 2);
+        mydisp.print(hours); mydisp.print(":"); if (minutes < 10) mydisp.print("0"); mydisp.print(minutes); mydisp.print(":"); if (seconds < 10) mydisp.print("0"); mydisp.print(seconds); mydisp.print("   ");
       break;
 
       case 4:  // ENCODER BUTTON SHORT PRESS
-        timeoutTime = millis()+menuTimeout;  // reset timeout timer
+        timeoutTime = millis()+menuTimeout;
         stillSelecting = false;
         break;
 
@@ -1352,23 +1087,23 @@ void defaultTargetSpeedMenu(){
   printTargetSpeed();
  do{
     switch(read_encoder())
-    {// analyze encoder response. Default is 0.
+    {
       case 1:  // ENCODER UP
-        timeoutTime = millis()+menuTimeout;  // reset timeout timer
+        timeoutTime = millis()+menuTimeout;
         Target100 = Target100 + 10;
         mydisp.setPrintPos(0, 1);
         printTargetSpeed();
         break;
 
       case 2:    //ENCODER DOWN
-        timeoutTime = millis()+menuTimeout;  // reset timeout timer
+        timeoutTime = millis()+menuTimeout;
         Target100 = Target100 - 10;
         mydisp.setPrintPos(0, 1);
         printTargetSpeed();
         break;
 
       case 4:  // ENCODER BUTTON SHORT PRESS
-        timeoutTime = millis()+menuTimeout;  // reset timeout timer
+        timeoutTime = millis()+menuTimeout;
         stillSelecting = false;
         break;
 
@@ -1393,23 +1128,23 @@ void unitMeasureMenu(){
   if (mph) mydisp.print("MPH "); else mydisp.print("KPH ");
  do{
     switch(read_encoder())
-    {// analyze encoder response. Default is 0.
+    {
       case 1:  // ENCODER UP
-        timeoutTime = millis()+menuTimeout;  // reset timeout timer
+        timeoutTime = millis()+menuTimeout;
         mph = !mph;
         mydisp.setPrintPos(0, 1);
         if (mph) mydisp.print("MPH "); else mydisp.print("KPH ");
       break;
 
       case 2:    //ENCODER DOWN
-        timeoutTime = millis()+menuTimeout;  // reset timeout timer
+        timeoutTime = millis()+menuTimeout;
         mph = !mph;
         mydisp.setPrintPos(0, 1);
         if (mph) mydisp.print("MPH "); else mydisp.print("KPH ");
       break;
 
       case 4:  // ENCODER BUTTON SHORT PRESS
-        timeoutTime = millis()+menuTimeout;  // reset timeout timer
+        timeoutTime = millis()+menuTimeout;
         stillSelecting = false;
       break;
 
@@ -1429,75 +1164,28 @@ void tempUnitMenu(){
   mydisp.clearScreen();
   mydisp.setFont(10);
   mydisp.setPrintPos(0, 0);
-  mydisp.print("Tempturature Measure Mode ");  
+  mydisp.print("Tempturature Mode ");  
   mydisp.setPrintPos(0, 1);
+  if (celsius) mydisp.print("Celsius "); else mydisp.print("Farenheit ");
  do{
-    /*
-    IF YOU WANT OTHER CODE GOING ON IN THE BACKGROUND
-    WHILE WAITING FOR THE USER TO DO SOMETHING, PUT IT HERE
-    */
     switch(read_encoder())
-     {// analyze encoder response. Default is 0.
+     {
      case 1:  // ENCODER UP
-        timeoutTime = millis()+menuTimeout;  // reset timeout timer
+        timeoutTime = millis()+menuTimeout;
         celsius = !celsius;
         mydisp.setPrintPos(0, 1);
         if (celsius) mydisp.print("Celsius "); else mydisp.print("Farenheit ");
       break;
 
       case 2:    //ENCODER DOWN
-        timeoutTime = millis()+menuTimeout;  // reset timeout timer
+        timeoutTime = millis()+menuTimeout;
         celsius = !celsius;
         mydisp.setPrintPos(0, 1);
         if (celsius) mydisp.print("Celsius "); else mydisp.print("Farenheit ");
        break;
 
       case 4:  // ENCODER BUTTON SHORT PRESS
-        timeoutTime = millis()+menuTimeout;  // reset timeout timer
-        stillSelecting = false;
-       break;
-
-      case 8:  // ENCODER BUTTON LONG PRESS
-       break;
-
-      case 16:  // ENCODER BUTTON NULL
-       break;
-
-    }
-  }
-   while (stillSelecting == true);
-}
-
-void debugMenu(){
-  boolean stillSelecting = true;
-  mydisp.clearScreen();
-  mydisp.setFont(10);
-  mydisp.setPrintPos(0, 0);
-  mydisp.print("Debug Mode ");  
-  mydisp.setPrintPos(0, 1);
- do{
-    /*
-    IF YOU WANT OTHER CODE GOING ON IN THE BACKGROUND
-    WHILE WAITING FOR THE USER TO DO SOMETHING, PUT IT HERE
-    */
-    switch(read_encoder())
-     {// analyze encoder response. Default is 0.
-     case 1:  // ENCODER UP
-        timeoutTime = millis()+menuTimeout;  // reset timeout timer
-        debug = !debug;
-        mydisp.setPrintPos(0, 1);
-        if (debug) mydisp.print("ON "); else mydisp.print("OFF ");
-      break;
-
-      case 2:    //ENCODER DOWN
-        timeoutTime = millis()+menuTimeout;  // reset timeout timer
-        debug = !debug;
-        mydisp.setPrintPos(0, 1);
-        if (debug) mydisp.print("ON "); else mydisp.print("OFF ");
-       break;
-
-      case 4:  // ENCODER BUTTON SHORT PRESS
-        timeoutTime = millis()+menuTimeout;  // reset timeout timer
+        timeoutTime = millis()+menuTimeout;
         stillSelecting = false;
        break;
 
@@ -1525,21 +1213,21 @@ void debugMenu(){
 //     WHILE WAITING FOR THE USER TO DO SOMETHING, PUT IT HERE
 //     */
 //     switch(read_encoder())
-//      {// analyze encoder response. Default is 0.
+//      {
 //      case 1:  // ENCODER UP
-//         timeoutTime = millis()+menuTimeout;  // reset timeout timer
+//         timeoutTime = millis()+menuTimeout;
 //         mydisp.setPrintPos(0, 1);
 //         mydisp.print("value Here");
 //       break;
 
 //       case 2:    //ENCODER DOWN
-//         timeoutTime = millis()+menuTimeout;  // reset timeout timer
+//         timeoutTime = millis()+menuTimeout;
 //         mydisp.setPrintPos(0, 1);
 //         mydisp.print("value Here");
 //        break;
 
 //       case 4:  // ENCODER BUTTON SHORT PRESS
-//         timeoutTime = millis()+menuTimeout;  // reset timeout timer
+//         timeoutTime = millis()+menuTimeout;
 //         stillSelecting = false;
 //        break;
 
@@ -1569,15 +1257,3 @@ void printTargetSpeed()
   mydisp.print (targetSpeedDecimal);
   if (mph) mydisp.print("MPH "); else mydisp.print("KPH ");
 }
-
-void DebugOutput()
-{
-  Serial.print("Time: ");   Serial.print(millis());
-  Serial.print(" GPS_Sp: ");  Serial.print(Speed100);
-  Serial.print(" Sp_Targ100: ");  Serial.print(Target100);
-  Serial.print("currentRPM: "); Serial.print(currentRPM);
-  Serial.print(" RPM_target: "); Serial.print(targetRPM);
-  Serial.print(" Srv: "); Serial.println(pos);
-}
-
-
