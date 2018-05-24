@@ -32,8 +32,8 @@ byte CurrentVersion = 18;
 //*************INITIALIZING DEFINITIONS*************
 double Setpoint, Input, Output;
 //ADAPTIVE TUNING MODE//
-double aggKp = 10, aggKi = 0.2, aggKd = 5; //NEED TO MAKE MENU OPTION FOR ADJUSTMENTS ON THE FLY
-double consKp = 5, consKi = 0.1, consKd = 3; //NEED TO MAKE MENU OPTION FOR ADJUSTMENTS ON THE FLY
+double aggKp = 1.5, aggKi = .5, aggKd = 1; //NEED TO MAKE MENU OPTION FOR ADJUSTMENTS ON THE FLY
+double consKp = 1, consKi = 1, consKd = 1; //NEED TO MAKE MENU OPTION FOR ADJUSTMENTS ON THE FLY
 PID myPID(&Input, &Output, &Setpoint, consKp, consKi, consKd, REVERSE);
 //------
 //MENU
@@ -449,7 +449,7 @@ void PIDCalculations()
     double gap = abs(Setpoint - Input);
     if (debug)Serial.print(gap);
     if (debug)Serial.print("<gap|");
-    if (gap < 10)
+    if (gap < 500)
     {
       myPID.SetTunings(consKp, consKi, consKd);
     }
