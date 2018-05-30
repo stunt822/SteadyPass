@@ -14,9 +14,10 @@
   ---|  17.00 - Sam James - Renamed File from "Limiter_16_53.ino", Added Title and Change History, Added Function comment and Descriptions, Minor code changes made that will not effect the main code.
   ---|  17.01 - ''''''''' - Remade speed and RPM calc into one function.
   ---|  17.02 - ''''''''' - Created knob and button switches. Long press, short press,knob up, and knob down. Added basic scroll menu no actual options to set yet
+  ---|  18    - ''''''''' - Menu options created, PID functioning correctly, Minor optimization done.
 */
 
-//*************LIBRARYS*************
+//******LIBRARYS******
 #include <TinyGPS++.h>
 #include <Servo.h>
 #include <SPI.h>
@@ -25,19 +26,17 @@
 #define _Digole_Serial_SPI_
 #include <DigoleSerial.h>
 #include <PID_v1.h>
-//----------------------------------
+//---------------------
 
 byte CurrentVersion = 18;
 
 //*************INITIALIZING DEFINITIONS*************
 double Setpoint, Input, Output;
-//ADAPTIVE TUNING MODE//
 double aggKp = 1.5, aggKi = .5, aggKd = 1; //NEED TO MAKE MENU OPTION FOR ADJUSTMENTS ON THE FLY
 double consKp = 1, consKi = 1, consKd = 1; //NEED TO MAKE MENU OPTION FOR ADJUSTMENTS ON THE FLY
 PID myPID(&Input, &Output, &Setpoint, consKp, consKi, consKd, REVERSE);
-//------
+
 //MENU
-//------
 #define MOVECURSOR 1  // constants for indicating whether cursor should be redrawn
 #define MOVELIST 2  // constants for indicating whether cursor should be redrawn
 byte totalRows = 6;  // total rows of LCD
@@ -45,7 +44,12 @@ byte totalCols = 1;  // total columns of LCD
 unsigned long timeoutTime = 0;  // this is set and compared to millis to see when the user last did something.
 const int menuTimeout = 10000; // time to timeout in a menu when user doesn't do anything.
 //------
-
+//GPS speed Average Vars
+const int numReadings = 10;
+int readings[numReadings];      // the readings from the analog input
+int readIndex = 0;              // the index of the current reading
+int total = 0;                  // the running total
+int averagespeed100 = 0;                // the average
 
 
 TinyGPSPlus gps;                                //required for TinyGPSplus Library
@@ -186,15 +190,18 @@ void setup()
   myservo.attach(servoPin);                   // attaches the servo on pin  to the servo object
   myservo.writeMicroseconds(pos);
   //PID Variables//
-  Input = Speed100;
+  Input = averagespeed100;
   Setpoint = Target100;
   myPID.SetOutputLimits(minServo, maxServo);
   //Turn on PID//
   myPID.SetMode(AUTOMATIC);
-
+ //Average GPS speed vars
+  for (int thisReading = 0; thisReading < numReadings; thisReading++) {
+  readings[thisReading] = 0;
+  }
 
   //******************LOADING SAVED SETTINGS*******************
-  // if (EEPROM.read(11) != 255) cylCoeff = EEPROM.read(11);
+  if (EEPROM.read(11) != 255) cylCoeff = EEPROM.read(11);
   // if (EEPROM.read(12) != 255) aggKp = EEPROM.read(12);
   // if (EEPROM.read(13) != 255) aggKd = EEPROM.read(13);
   // if (EEPROM.read(14) != 255) aggKi = EEPROM.read(14);
@@ -202,12 +209,12 @@ void setup()
   // if (EEPROM.read(23) != 255) consKd = EEPROM.read(23);
   // if (EEPROM.read(24) != 255) consKi = EEPROM.read(24);
   // if (EEPROM.read(15) != 255) hourOffset = 24 - EEPROM.read(15);
-  // if (EEPROM.read(16) != 255) maxServo = 10 * EEPROM.read(16);
-  // if (EEPROM.read(17) != 255) minServo = 10 * EEPROM.read(17);
-  // if (EEPROM.read(18) != 255) mph = EEPROM.read(18);
-  // if (EEPROM.read(29) != 255) celsius = EEPROM.read(29);
-  // if (EEPROM.read(30) != 255) Target100 = EEPROM.read(30) * 100;
-  // if (EEPROM.read(31) != 255) Reverse = EEPROM.read(31);
+  if (EEPROM.read(16) != 255) maxServo = 10 * EEPROM.read(16);
+  if (EEPROM.read(17) != 255) minServo = 10 * EEPROM.read(17);
+  if (EEPROM.read(18) != 255) mph = EEPROM.read(18);
+  if (EEPROM.read(29) != 255) celsius = EEPROM.read(29);
+  if (EEPROM.read(30) != 255) Target100 = EEPROM.read(30) * 100;
+  if (EEPROM.read(31) != 255) Reverse = EEPROM.read(31);
   //----------------LOADED VALUES COMPLETE-------------------
 
   //******************LOADING GPS CONFIGURATION*******************
@@ -223,11 +230,22 @@ void loop ()
 {
   if (led) {digitalWrite(13, LOW); led = false;}
   else {digitalWrite(13, HIGH); led = true;}
-  smartDelay(50);
+  delay(200);
+  //smartDelay(50);
   if (gps.speed.isValid()){speedGpsD = gps.speed.mph();}
 
   Speed100 = 100 * speedGpsD;
   currentRPM = readRpm();
+  //Average Speeds reading over last 10 cycles
+  total = total - readings[readIndex];
+  readings[readIndex] = Speed100;
+  total = total + readings[readIndex];
+  readIndex = readIndex + 1;
+  if (readIndex >= numReadings) {
+    readIndex = 0;
+  }
+  // calculate the average:
+  averagespeed100 = total / numReadings;
 
   // //Get Total Run time since powerup//
   // if (currentRPM > 50) {tachTime += millis() - tachTimePrev; tachTimePrev = millis();}
@@ -242,7 +260,8 @@ void loop ()
       mydisp.print(" ! DECREASE !     ");
       mydisp.setPrintPos(0, 1);
       mydisp.print(" ! THROTTLE !     ");
-      smartDelay(50);
+      //smartDelay(50);
+      delay(200);
       
       if (gps.speed.isValid())
       {
@@ -255,25 +274,7 @@ void loop ()
       mydisp.print("                  ");
     }
   }
-  // //STORE LAST 10 GPS SPEEDS//
-  // for (i = 10; i > 0; i--){
-  //   speedBuffer[i] = speedBuffer[i - 1];
-  //   speedBuffer[0] = Speed100;
-  //   avSpeed100 = 0;
-  // }
-  // if (debug)Serial.print("beforeAVRspeed");
-  // //CALCULATE AVERAGE SPEED//
-  // for (i = 5; i >= 0; i--){
-  //   avSpeed100 += speedBuffer[i];
-  //   avSpeed100 = avSpeed100 / 6;
-  // }
-  //  if (debug)Serial.print("afterAVR");
-  // //STORE LAST 10 currentRPM VALUES
-  // for (i = 10; i > 0; i--){
-  //   rpmBuffer[i] = rpmBuffer[i - 1];
-  //   rpmBuffer[0] = currentRPM;
-  // }
-
+ 
   //RUN CURRENT CALCULATION MODE//
   if (mode == 0) {pos = minServo;}
   else{
@@ -313,7 +314,7 @@ void loop ()
     delay(500);
   }
 
-  while (buttonTimes > buttonTarget)      Menu();
+  while (buttonTimes > buttonTarget) {mydisp.print("Main Menu"); Menu();}
 
   /*
     //tweak on the fly  - for tuning from PC
@@ -433,7 +434,7 @@ void PIDCalculations()
 {
   //PID INPUTS//
 
-      if (speedMode){
+  if (speedMode){
     Input = Speed100;
     Setpoint = Target100;
   }
@@ -447,11 +448,12 @@ void PIDCalculations()
     if (debug)Serial.print(Setpoint);
     if (debug)Serial.print("<target|");
     double gap = abs(Setpoint - Input);
+    gap = gap / 10;
     if (debug)Serial.print(gap);
     if (debug)Serial.print("<gap|");
-    if (gap < 500)
+    if (gap < 50)
     {
-      myPID.SetTunings(consKp, consKi, consKd);
+      myPID.SetTunings(aggKp, aggKp, aggKp);
     }
     else
     {
@@ -477,7 +479,7 @@ void MainDisplay()
   seconds = gps.time.second();
   mydisp.setFont(10);
   mydisp.setPrintPos(0, 1);
-  mydisp.print(hours); mydisp.print(":"); if (minutes < 10) mydisp.print("0"); mydisp.print(minutes); mydisp.print(":"); if (seconds < 10) mydisp.print("0"); mydisp.print(seconds); mydisp.print("            ");
+  mydisp.print(hours); mydisp.print(":"); if (minutes < 10) mydisp.print("0"); mydisp.print(minutes); mydisp.print(":"); if (seconds < 10) mydisp.print("0"); mydisp.print(seconds); mydisp.print("    ");
 
   //print word "GPS"//
   mydisp.setFont(10);
@@ -573,6 +575,9 @@ void Menu(){
     "Default Target Speed",
     "Unit of Measure",
     "Temp",
+    "PIDKpmenu",
+    "PIDKimenu",
+    "PIDKdmenu",
      ""
   };
   while (menuItems[totalMenuItems] != ""){
@@ -652,6 +657,18 @@ void Menu(){
       break;
        case 8:  // menu item 9 selected
         tempUnitMenu();
+        redraw = MOVELIST;
+      break;
+      case 9:  // menu item 10 selected
+        PIDKpmenu();
+        redraw = MOVELIST;
+      break;
+      case 10:  // menu item 11 selected
+        PIDKimenu();
+        redraw = MOVELIST;
+      break;
+      case 11:  // menu item 12 selected
+        PIDKdmenu();
         redraw = MOVELIST;
       break;
         // add as many "case #:" as items. Could put 
@@ -804,6 +821,7 @@ void minThrottleMenu(){
       case 4:  // ENCODER BUTTON SHORT PRESS
         timeoutTime = millis()+menuTimeout;
         stillSelecting = false;
+        if (Reverse) EEPROM.write(17,minServo /10); else EEPROM.write(16,maxServo /10);
         break;
 
       case 8:  // ENCODER BUTTON LONG PRESS
@@ -850,6 +868,7 @@ void maxThrottleMenu(){
       case 4:  // ENCODER BUTTON SHORT PRESS
         timeoutTime = millis()+menuTimeout;
         stillSelecting = false;
+        if (Reverse) EEPROM.write(16,maxServo /10); else EEPROM.write(17,minServo /10);
         break;
 
       case 8:  // ENCODER BUTTON LONG PRESS
@@ -945,6 +964,7 @@ void reverseServoModeMenu(){
       case 4:  // ENCODER BUTTON SHORT PRESS
         timeoutTime = millis()+menuTimeout;
         stillSelecting = false;
+        if (Reverse) EEPROM.write(31,1); else EEPROM.write(31,0);
         break;
 
       case 8:  // ENCODER BUTTON LONG PRESS
@@ -1005,6 +1025,7 @@ void cylinderCountMenu(){
       case 4:  // ENCODER BUTTON SHORT PRESS
         timeoutTime = millis()+menuTimeout;
         stillSelecting = false;
+        EEPROM.write(11,cylCoeff);
         break;
 
       case 8:  // ENCODER BUTTON LONG PRESS
@@ -1117,6 +1138,7 @@ void defaultTargetSpeedMenu(){
       case 4:  // ENCODER BUTTON SHORT PRESS
         timeoutTime = millis()+menuTimeout;
         stillSelecting = false;
+        EEPROM.write(30,Target100 /100);
         break;
 
       case 8:  // ENCODER BUTTON LONG PRESS
@@ -1158,6 +1180,7 @@ void unitMeasureMenu(){
       case 4:  // ENCODER BUTTON SHORT PRESS
         timeoutTime = millis()+menuTimeout;
         stillSelecting = false;
+        if (mph) EEPROM.write(18,1); else EEPROM.write(18,0);
       break;
 
       case 8:  // ENCODER BUTTON LONG PRESS
@@ -1199,6 +1222,7 @@ void tempUnitMenu(){
       case 4:  // ENCODER BUTTON SHORT PRESS
         timeoutTime = millis()+menuTimeout;
         stillSelecting = false;
+        if (celsius) EEPROM.write(29,1); else EEPROM.write(29,0);
        break;
 
       case 8:  // ENCODER BUTTON LONG PRESS
@@ -1211,6 +1235,152 @@ void tempUnitMenu(){
   }
    while (stillSelecting == true);
 }
+
+
+void PIDKpmenu(){
+  boolean stillSelecting = true;
+  mydisp.clearScreen();
+  mydisp.setFont(10);
+  mydisp.setPrintPos(0, 0);
+  mydisp.print("Kp setting");  
+  mydisp.setPrintPos(0, 1);
+  mydisp.print(aggKp);
+ do{
+    switch(read_encoder())
+     {
+     case 1:  // ENCODER UP
+        timeoutTime = millis()+menuTimeout;
+        mydisp.setPrintPos(0, 1);
+        mydisp.print("Kp: ");
+        aggKp = aggKp * 10;
+        aggKp = aggKp + 1;
+        aggKp /= 10;
+        mydisp.print(aggKp);mydisp.print("  ");
+      break;
+
+      case 2:    //ENCODER DOWN
+        timeoutTime = millis()+menuTimeout;
+        mydisp.setPrintPos(0, 1);
+        mydisp.print("Kp: ");
+        aggKp = aggKp * 100;
+        aggKp = aggKp - 1;
+        aggKp /= 100;
+        mydisp.print(aggKp);mydisp.print("  ");
+       break;
+
+      case 4:  // ENCODER BUTTON SHORT PRESS
+        timeoutTime = millis()+menuTimeout;
+        stillSelecting = false;
+        EEPROM.write(12,aggKp);
+       break;
+
+      case 8:  // ENCODER BUTTON LONG PRESS
+       break;
+
+      case 16:  // ENCODER BUTTON NULL
+       break;
+
+    }
+  }
+   while (stillSelecting == true);
+}
+
+void PIDKimenu(){
+  boolean stillSelecting = true;
+  mydisp.clearScreen();
+  mydisp.setFont(10);
+  mydisp.setPrintPos(0, 0);
+  mydisp.print("Ki setting");  
+  mydisp.setPrintPos(0, 1);
+   mydisp.print(aggKi);
+ do{
+    switch(read_encoder())
+     {
+     case 1:  // ENCODER UP
+        timeoutTime = millis()+menuTimeout;
+        mydisp.setPrintPos(0, 1);
+        mydisp.print("Ki: ");
+        aggKi = aggKi * 10;
+        aggKi = aggKi + 1;
+        aggKi /= 10;
+        mydisp.print(aggKi);mydisp.print("  ");
+      break;
+
+      case 2:    //ENCODER DOWN
+        timeoutTime = millis()+menuTimeout;
+        mydisp.setPrintPos(0, 1);
+        mydisp.print("Ki: ");
+        aggKi = aggKi * 10;
+        aggKi = aggKi - 1;
+        aggKi /= 10;
+        mydisp.print(aggKi);mydisp.print("  ");
+       break;
+
+      case 4:  // ENCODER BUTTON SHORT PRESS
+        timeoutTime = millis()+menuTimeout;
+        stillSelecting = false;
+        EEPROM.write(13,aggKi);
+       break;
+
+      case 8:  // ENCODER BUTTON LONG PRESS
+       break;
+
+      case 16:  // ENCODER BUTTON NULL
+       break;
+
+    }
+  }
+   while (stillSelecting == true);
+}
+
+void PIDKdmenu(){
+  boolean stillSelecting = true;
+  mydisp.clearScreen();
+  mydisp.setFont(10);
+  mydisp.setPrintPos(0, 0);
+  mydisp.print("Kd setting");  
+  mydisp.setPrintPos(0, 1);
+  mydisp.print(aggKd);
+ do{
+    switch(read_encoder())
+     {
+     case 1:  // ENCODER UP
+        timeoutTime = millis()+menuTimeout;
+        mydisp.setPrintPos(0, 1);
+        mydisp.print("Kd: ");
+        aggKd = aggKd * 10;
+        aggKd = aggKd + 1;
+        aggKd /= 10;
+        mydisp.print(aggKd);mydisp.print("  ");
+      break;
+
+      case 2:    //ENCODER DOWN
+        timeoutTime = millis()+menuTimeout;
+        mydisp.setPrintPos(0, 1);
+        mydisp.print("Kd: ");
+        aggKd = aggKd * 10;
+        aggKd = aggKd - 1;
+        aggKd /= 10;
+        mydisp.print(aggKd);mydisp.print("  ");
+       break;
+
+      case 4:  // ENCODER BUTTON SHORT PRESS
+        timeoutTime = millis()+menuTimeout;
+        stillSelecting = false;
+        EEPROM.write(14,aggKd);
+       break;
+
+      case 8:  // ENCODER BUTTON LONG PRESS
+       break;
+
+      case 16:  // ENCODER BUTTON NULL
+       break;
+
+    }
+  }
+   while (stillSelecting == true);
+}
+
 
 // void menuSubMenuTemplate(){
 //   boolean stillSelecting = true;
