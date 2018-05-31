@@ -31,8 +31,9 @@
 byte CurrentVersion = 18;
 
 //*************INITIALIZING DEFINITIONS*************
+bool firstLoopOnStart = true;
 double Setpoint, Input, Output;
-double aggKp = 1.5, aggKi = .5, aggKd = 1; //NEED TO MAKE MENU OPTION FOR ADJUSTMENTS ON THE FLY
+double aggKp = 1, aggKi = 1 , aggKd = 1; //NEED TO MAKE MENU OPTION FOR ADJUSTMENTS ON THE FLY
 double consKp = 1, consKi = 1, consKd = 1; //NEED TO MAKE MENU OPTION FOR ADJUSTMENTS ON THE FLY
 PID myPID(&Input, &Output, &Setpoint, consKp, consKi, consKd, REVERSE);
 
@@ -167,20 +168,23 @@ void setup()
   if (debug)Serial.begin(9600);
   delay (1000);
   Serial1.begin(9600);   //GPS device
-
-  //digole LCD init section with name and version
-  delay (2000);
-  mydisp.begin(); mydisp.clearScreen();  delay(100);   mydisp.print("  ................. "); delay(100); mydisp.clearScreen();  delay(100);   mydisp.print("."); delay(100);
-  mydisp.print("   ");  delay(100);  mydisp.print("STEADYPASS");    delay(1000);
-  mydisp.setFont(10);
-  mydisp.setPrintPos(0, 4);
-  mydisp.print(" Version: ");
+  delay (1000);
+  mydisp.begin(); mydisp.clearScreen();  delay(100);
+  mydisp.setFont(30);
+  mydisp.setPrintPos(0, 1);
+  mydisp.print("   ");  delay(100);  mydisp.print("STEADYPASS");delay(1000);
+  mydisp.setPrintPos(0, 3);
+  mydisp.print("  Version: ");
   mydisp.print(CurrentVersion);
   delay(5000);
   mydisp.clearScreen();
+  delay(500);
+  mydisp.setPrintPos(0, 2);
+  mydisp.setFont(30);
   mydisp.print("ACQUIRING SIGNAL");
-  delay(3000);
-  mydisp.clearScreen();
+    mydisp.setPrintPos(0, 3);
+  mydisp.print("  PLEASE WAIT ");
+  delay(1000);
   pinMode(PinCLK, INPUT);                     //rotary encoder
   pinMode(PinDT, INPUT);                      //rotary encoder
   pinMode(PinSW, INPUT_PULLUP);               //rotary encoder button
@@ -192,19 +196,17 @@ void setup()
   //PID Variables//
   Input = averagespeed100;
   Setpoint = Target100;
-  myPID.SetOutputLimits(minServo, maxServo);
   //Turn on PID//
   myPID.SetMode(AUTOMATIC);
  //Average GPS speed vars
   for (int thisReading = 0; thisReading < numReadings; thisReading++) {
   readings[thisReading] = 0;
   }
-
   //******************LOADING SAVED SETTINGS*******************
   if (EEPROM.read(11) != 255) cylCoeff = EEPROM.read(11);
-  // if (EEPROM.read(12) != 255) aggKp = EEPROM.read(12);
-  // if (EEPROM.read(13) != 255) aggKd = EEPROM.read(13);
-  // if (EEPROM.read(14) != 255) aggKi = EEPROM.read(14);
+  if (EEPROM.read(12) != 255) aggKp = EEPROM.read(12);
+  if (EEPROM.read(13) != 255) aggKd = EEPROM.read(13);
+  if (EEPROM.read(14) != 255) aggKi = EEPROM.read(14);
   // if (EEPROM.read(22) != 255) consKp = EEPROM.read(22);
   // if (EEPROM.read(23) != 255) consKd = EEPROM.read(23);
   // if (EEPROM.read(24) != 255) consKi = EEPROM.read(24);
@@ -217,21 +219,23 @@ void setup()
   if (EEPROM.read(31) != 255) Reverse = EEPROM.read(31);
   //----------------LOADED VALUES COMPLETE-------------------
 
+myPID.SetOutputLimits(minServo, maxServo);
+
   //******************LOADING GPS CONFIGURATION*******************
   //Serial1.println("$PMTK314,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*29");   //Sets GPS to GTV only
   Serial1.println("$PMTK314,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*29");     //Sets GPS to RMC only
-  delay (500);
+  delay (100);
   Serial1.println("$PMTK220,200*2C");  //Set GPS to 5hz
-  delay (500);
+  delay (100);
 }
 
 //**RUN MAIN**|
 void loop ()
 {
+  if (firstLoopOnStart) {mydisp.clearScreen();delay(100);}
   if (led) {digitalWrite(13, LOW); led = false;}
   else {digitalWrite(13, HIGH); led = true;}
-  delay(200);
-  //smartDelay(50);
+  smartDelay(50);
   if (gps.speed.isValid()){speedGpsD = gps.speed.mph();}
 
   Speed100 = 100 * speedGpsD;
@@ -260,8 +264,7 @@ void loop ()
       mydisp.print(" ! DECREASE !     ");
       mydisp.setPrintPos(0, 1);
       mydisp.print(" ! THROTTLE !     ");
-      //smartDelay(50);
-      delay(200);
+      smartDelay(50);
       
       if (gps.speed.isValid())
       {
@@ -313,41 +316,9 @@ void loop ()
     mydisp.setFont(10);
     delay(500);
   }
-
   while (buttonTimes > buttonTarget) {mydisp.print("Main Menu"); Menu();}
-
-  /*
-    //tweak on the fly  - for tuning from PC
-      if(Serial.available())
-    {
-     char b = Serial.read();
-     Serial.flush();
-
-      if((b=='w'))  Target100 += 100;
-      if((b=='s'))  Target100 -= 100;
-      if((b=='e'))  Kd += 1;
-      if((b=='d'))  Kd -= 1;
-      if((b=='p'))  Kp += 1;
-      if((b==';'))  Kp -= 1;
-      if((b=='o'))  Ko += 1;
-      if((b=='l'))  Ko -= 1;
-      if((b=='r'))  targetRPM += 10;
-      if((b=='f'))  targetRPM -= 10;
-      if((b=='g'))  {gpsMode =!gpsMode;  targetRPM = currentRPM;}
-
-    }*/
-
-  //  Serial.print("Tgt: ");Serial.print(Target100); Serial.print(" ");
-  //  Serial.print("Sp: ");Serial.print(Speed100); Serial.print(" ");
-  //  Serial.print("Sp_Cor: ");Serial.print(SpeedCorrected); Serial.print(" ");
-  //  Serial.print("Srv: ");Serial.print(180-pos); Serial.print(" ");
-
-  //  Serial.print("Kp: ");Serial.print(Kp);Serial.print(" ");
-  //  Serial.print("Kd: ");Serial.print(Kd);Serial.print(" ");
-  //  Serial.print("Ko: ");Serial.print(Ko);Serial.println();
+  if (firstLoopOnStart) {firstLoopOnStart = false;}
 }
-//----MAIN END----|
-
 
 //*******************************************************************
 /* FUNCTION: smartDelay()
@@ -357,7 +328,6 @@ void loop ()
 */
 static void smartDelay(unsigned long ms)
 {
-  unsigned long start = millis();
   do
   {
     while (Serial1.available())
@@ -365,7 +335,7 @@ static void smartDelay(unsigned long ms)
       gps.encode(Serial1.read());
     }
   }
-  while ( (!gps.speed.isUpdated())  );                  //while (millis() - start < ms);
+  while ( (!gps.speed.isUpdated())  );  
 }
 //End Function
 
@@ -572,12 +542,12 @@ void Menu(){
     "Reverse Servo Mode",
     "Engine Cylinders", 
     "Time Zone Offset",
-    "Default Target Speed",
+    "Startup Target Speed",
     "Unit of Measure",
-    "Temp",
-    "PIDKpmenu",
-    "PIDKimenu",
-    "PIDKdmenu",
+    //"Temp",
+    "Rate of Adjustment",
+    "Speed of Adjustment",
+    "Predictive Change",
      ""
   };
   while (menuItems[totalMenuItems] != ""){
@@ -655,19 +625,19 @@ void Menu(){
         unitMeasureMenu();
         redraw = MOVELIST;
       break;
-       case 8:  // menu item 9 selected
-        tempUnitMenu();
-        redraw = MOVELIST;
-      break;
-      case 9:  // menu item 10 selected
+      //case 8:  // menu item 9 selected
+      //  tempUnitMenu();
+      //  redraw = MOVELIST;
+      //break;
+      case 8:  // menu item 10 selected
         PIDKpmenu();
         redraw = MOVELIST;
       break;
-      case 10:  // menu item 11 selected
+      case 9:  // menu item 11 selected
         PIDKimenu();
         redraw = MOVELIST;
       break;
-      case 11:  // menu item 12 selected
+      case 10:  // menu item 12 selected
         PIDKdmenu();
         redraw = MOVELIST;
       break;
@@ -1115,7 +1085,7 @@ void defaultTargetSpeedMenu(){
   mydisp.clearScreen();
   mydisp.setFont(10);
   mydisp.setPrintPos(0, 0);
-  mydisp.print("Default Target Speed ");  
+  mydisp.print("Startup Target Speed");  
   mydisp.setPrintPos(0, 1);
   printTargetSpeed();
  do{
@@ -1194,74 +1164,76 @@ void unitMeasureMenu(){
    while (stillSelecting == true);
 }
 
-void tempUnitMenu(){
-  boolean stillSelecting = true;
-  mydisp.clearScreen();
-  mydisp.setFont(10);
-  mydisp.setPrintPos(0, 0);
-  mydisp.print("Tempturature Mode ");  
-  mydisp.setPrintPos(0, 1);
-  if (celsius) mydisp.print("Celsius "); else mydisp.print("Farenheit ");
- do{
-    switch(read_encoder())
-     {
-     case 1:  // ENCODER UP
-        timeoutTime = millis()+menuTimeout;
-        celsius = !celsius;
-        mydisp.setPrintPos(0, 1);
-        if (celsius) mydisp.print("Celsius "); else mydisp.print("Farenheit ");
-      break;
+// void tempUnitMenu(){
+//   boolean stillSelecting = true;
+//   mydisp.clearScreen();
+//   mydisp.setFont(10);
+//   mydisp.setPrintPos(0, 0);
+//   mydisp.print("Tempturature Mode ");  
+//   mydisp.setPrintPos(0, 1);
+//   if (celsius) mydisp.print("Celsius "); else mydisp.print("Farenheit ");
+//  do{
+//     switch(read_encoder())
+//      {
+//      case 1:  // ENCODER UP
+//         timeoutTime = millis()+menuTimeout;
+//         celsius = !celsius;
+//         mydisp.setPrintPos(0, 1);
+//         if (celsius) mydisp.print("Celsius "); else mydisp.print("Farenheit ");
+//       break;
 
-      case 2:    //ENCODER DOWN
-        timeoutTime = millis()+menuTimeout;
-        celsius = !celsius;
-        mydisp.setPrintPos(0, 1);
-        if (celsius) mydisp.print("Celsius "); else mydisp.print("Farenheit ");
-       break;
+//       case 2:    //ENCODER DOWN
+//         timeoutTime = millis()+menuTimeout;
+//         celsius = !celsius;
+//         mydisp.setPrintPos(0, 1);
+//         if (celsius) mydisp.print("Celsius "); else mydisp.print("Farenheit ");
+//        break;
 
-      case 4:  // ENCODER BUTTON SHORT PRESS
-        timeoutTime = millis()+menuTimeout;
-        stillSelecting = false;
-        if (celsius) EEPROM.write(29,1); else EEPROM.write(29,0);
-       break;
+//       case 4:  // ENCODER BUTTON SHORT PRESS
+//         timeoutTime = millis()+menuTimeout;
+//         stillSelecting = false;
+//         if (celsius) EEPROM.write(29,1); else EEPROM.write(29,0);
+//        break;
 
-      case 8:  // ENCODER BUTTON LONG PRESS
-       break;
+//       case 8:  // ENCODER BUTTON LONG PRESS
+//        break;
 
-      case 16:  // ENCODER BUTTON NULL
-       break;
+//       case 16:  // ENCODER BUTTON NULL
+//        break;
 
-    }
-  }
-   while (stillSelecting == true);
-}
-
+//     }
+//   }
+//    while (stillSelecting == true);
+// }
 
 void PIDKpmenu(){
   boolean stillSelecting = true;
   mydisp.clearScreen();
   mydisp.setFont(10);
   mydisp.setPrintPos(0, 0);
-  mydisp.print("Kp setting");  
-  mydisp.setPrintPos(0, 1);
+  mydisp.print("Rate of Adjustment"); 
+  mydisp.setPrintPos(0, 1); 
+  mydisp.print("Default rate = 1");  
+  mydisp.setPrintPos(0, 3);
+  mydisp.print("Rate: ");
   mydisp.print(aggKp);
  do{
     switch(read_encoder())
      {
      case 1:  // ENCODER UP
         timeoutTime = millis()+menuTimeout;
-        mydisp.setPrintPos(0, 1);
-        mydisp.print("Kp: ");
-        aggKp = aggKp * 10;
+        mydisp.setPrintPos(0, 3);
+        mydisp.print("Rate: ");
+        aggKp = aggKp * 100;
         aggKp = aggKp + 1;
-        aggKp /= 10;
+        aggKp /= 100;
         mydisp.print(aggKp);mydisp.print("  ");
       break;
 
       case 2:    //ENCODER DOWN
         timeoutTime = millis()+menuTimeout;
-        mydisp.setPrintPos(0, 1);
-        mydisp.print("Kp: ");
+        mydisp.setPrintPos(0, 3);
+        mydisp.print("Rate: ");
         aggKp = aggKp * 100;
         aggKp = aggKp - 1;
         aggKp /= 100;
@@ -1290,30 +1262,33 @@ void PIDKimenu(){
   mydisp.clearScreen();
   mydisp.setFont(10);
   mydisp.setPrintPos(0, 0);
-  mydisp.print("Ki setting");  
+  mydisp.print("Speed of adjustment");
   mydisp.setPrintPos(0, 1);
-   mydisp.print(aggKi);
+  mydisp.print("default = 2");
+  mydisp.setPrintPos(0, 3);
+  mydisp.print("Speed: ");
+  mydisp.print(aggKi);
  do{
     switch(read_encoder())
      {
      case 1:  // ENCODER UP
         timeoutTime = millis()+menuTimeout;
-        mydisp.setPrintPos(0, 1);
-        mydisp.print("Ki: ");
-        aggKi = aggKi * 10;
+        mydisp.setPrintPos(0, 3);
+        mydisp.print("Speed: ");
+        aggKi = aggKi * 100;
         aggKi = aggKi + 1;
-        aggKi /= 10;
-        mydisp.print(aggKi);mydisp.print("  ");
+        aggKi = aggKi / 100;
+        mydisp.print(aggKi);mydisp.print("   ");
       break;
 
       case 2:    //ENCODER DOWN
         timeoutTime = millis()+menuTimeout;
-        mydisp.setPrintPos(0, 1);
-        mydisp.print("Ki: ");
-        aggKi = aggKi * 10;
+        mydisp.setPrintPos(0, 3);
+       mydisp.print("Speed: ");
+        aggKi = aggKi * 100;
         aggKi = aggKi - 1;
-        aggKi /= 10;
-        mydisp.print(aggKi);mydisp.print("  ");
+        aggKi = aggKi / 100;
+        mydisp.print(aggKi);mydisp.print("     ");
        break;
 
       case 4:  // ENCODER BUTTON SHORT PRESS
@@ -1338,29 +1313,32 @@ void PIDKdmenu(){
   mydisp.clearScreen();
   mydisp.setFont(10);
   mydisp.setPrintPos(0, 0);
-  mydisp.print("Kd setting");  
+  mydisp.print("Predictive Change");  
   mydisp.setPrintPos(0, 1);
+  mydisp.print("Default = 2"); 
+  mydisp.setPrintPos(0, 3);
+  mydisp.print("Rate: ");
   mydisp.print(aggKd);
  do{
     switch(read_encoder())
      {
      case 1:  // ENCODER UP
         timeoutTime = millis()+menuTimeout;
-        mydisp.setPrintPos(0, 1);
-        mydisp.print("Kd: ");
-        aggKd = aggKd * 10;
+        mydisp.setPrintPos(0, 3);
+        mydisp.print("Rate: ");
+        aggKd = aggKd * 100;
         aggKd = aggKd + 1;
-        aggKd /= 10;
+        aggKd /= 100;
         mydisp.print(aggKd);mydisp.print("  ");
       break;
 
       case 2:    //ENCODER DOWN
         timeoutTime = millis()+menuTimeout;
-        mydisp.setPrintPos(0, 1);
-        mydisp.print("Kd: ");
-        aggKd = aggKd * 10;
+        mydisp.setPrintPos(0, 3);
+        mydisp.print("Rate: ");
+        aggKd = aggKd * 100;
         aggKd = aggKd - 1;
-        aggKd /= 10;
+        aggKd /= 100;
         mydisp.print(aggKd);mydisp.print("  ");
        break;
 
@@ -1375,12 +1353,10 @@ void PIDKdmenu(){
 
       case 16:  // ENCODER BUTTON NULL
        break;
-
     }
   }
    while (stillSelecting == true);
 }
-
 
 // void menuSubMenuTemplate(){
 //   boolean stillSelecting = true;
