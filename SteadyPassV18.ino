@@ -66,7 +66,7 @@ const byte PinCLK = 2;             //encoder second pin
 const byte PinDT = 3;              // Used for reading DT signal of encoder
 const byte PinSW = 4;              //encoder button
 const byte servoPin = 5;           //servo PWM connected here
-const byte rpmPin = 7;             //Engine currentRPM input connected here
+const byte rpmPin = 7;             //Engine RPM input connected here
 //8 and 9 - LCD, defined above
 //open - 10 - LCD SS?
 const byte tempWtrPin = 11;        //temperature water
@@ -90,7 +90,6 @@ boolean celsius = true;
 
 //*************SPEED INITIALIZATION*************
 int speedValue = 0, speedGps = 0;
-//double speedGpsD = 0;
 int TargetSpeedInt, Target100 = 500;
 int Speed100, pos100;
 boolean mph = true;
@@ -100,7 +99,6 @@ int targetSpeedWhole = TargetSpeedInt / 10;
 int targetSpeedDecimal = TargetSpeedInt %10;
 
 //*************RPM INITIALIZATION*************
-//long currentRPM = 0;
 volatile unsigned long duration = 0; // accumulates pulse width
 volatile unsigned long pulsecount = 0; //incremented by interrupt
 volatile unsigned long previousMicros = 0;
@@ -114,7 +112,6 @@ int maxServo = 1660;
 int pos = minServo;
 int S = 10;
 float throttlePer = 100;
-//int roundedThrottlePer = 0;
 
 //*************ENCODER INITIALIZATION*************
 volatile boolean TurnDetected = false;
@@ -128,7 +125,7 @@ int hours, minutes, seconds, hourOffset = 12;
 boolean speedMode = true;
 
 //*************FUNCTION INITIALIZATION*************
-int   readRpm();                              //read/calculate currentRPM and reset counters
+int   readRpm();                              //read RPM and reset counters
 void  rpmIntHandler();                        //called by interupt, increments counters
 static void smartDelay(unsigned long ms);     //Reads Data from GPS device
 void  isr();                                  //encoder - Interrupt service routine is executed when a HIGH to LOW transition is detected on CLK
@@ -143,9 +140,9 @@ int read_encoder();                          //Reads knob up/down/press/longpres
 void setup()
 {
   if (debug)Serial.begin(9600);
-  delay (1000);
+  delay (100);
   Serial1.begin(9600);   //GPS device
-  delay (1000);
+  delay (100);
   mydisp.begin();delay(3000); mydisp.clearScreen();  delay(100);
   mydisp.setFont(30);
   mydisp.setPrintPos(0, 1);
@@ -215,7 +212,6 @@ void loop ()
   if (firstLoopOnStart) {mydisp.clearScreen();delay(100);}
   if (gps.speed.isValid()){Speed100 = 100 * gps.speed.mph();}
   //Speed100 = 100 * speedGpsD;
-  //currentRPM = readRpm();
   //Average Speeds reading over last 10 cycles
   total = total - readings[readIndex];
   readings[readIndex] = Speed100;
@@ -263,6 +259,7 @@ void loop ()
   //DISPLAY MAIN OUTPUT section
   TargetSpeedInt = Target100 / 10;
   speedValue = Speed100 / 10; 
+  if (!mph) speedValue *= 1.61;
 
   if (mainDisplay) MainDisplay();  //DISPLAY MAIN OUTPUT
 
@@ -323,9 +320,9 @@ int readRpm()
   unsigned long _pulsecount = pulsecount;
   duration = 0; // clear counters
   pulsecount = 0;
-  long freqq = 60 * 1e5 * _pulsecount / _duration / cylCoeff;
-  freqq *= 10;
-  return (freqq);
+  long rpmOut = 60 * 1e5 * _pulsecount / _duration / cylCoeff;
+  rpmOut *= 10;
+  return (rpmOut);
 }
 //End Function
 
