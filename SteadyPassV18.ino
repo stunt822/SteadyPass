@@ -91,7 +91,7 @@ boolean celsius = true;
 //*************SPEED INITIALIZATION*************
 int speedValue = 0, speedGps = 0;
 int TargetSpeedInt, Target100 = 500;
-int Speed100, pos100;
+int speed100, pos100;
 boolean mph = true;
 unsigned long delayCheck = 0;
 unsigned long throttleCheck = 0;
@@ -207,11 +207,11 @@ void loop ()
   else {digitalWrite(13, HIGH); led = true;}
   smartDelay(50);
   if (firstLoopOnStart) {mydisp.clearScreen();delay(100);}
-  if (gps.speed.isValid()){Speed100 = 100 * gps.speed.mph();}
-  //Speed100 = 100 * speedGpsD;
+  if (gps.speed.isValid()){speed100 = 100 * gps.speed.mph();}
+  //speed100 = 100 * speedGpsD;
   //Average Speeds reading over last x cycles
   total = total - readings[readIndex];
-  readings[readIndex] = Speed100;
+  readings[readIndex] = speed100;
   total = total + readings[readIndex];
   readIndex = readIndex + 1;
   if (readIndex >= numReadings) {
@@ -233,7 +233,7 @@ void loop ()
       
       if (gps.speed.isValid())
       {
-        Speed100 = 100 * gps.speed.mph();
+        speed100 = 100 * gps.speed.mph();
       }
       //Speed100 = 100 * speedGpsD;
       mydisp.setPrintPos(0, 0);
@@ -255,7 +255,7 @@ void loop ()
 
   //DISPLAY MAIN OUTPUT section
   TargetSpeedInt = Target100 / 10;
-  speedValue = Speed100 / 10; 
+  speedValue = speed100 / 10; 
   if (!mph) speedValue *= 1.61;
 
   if (mainDisplay) MainDisplay();  //DISPLAY MAIN OUTPUT
@@ -371,7 +371,7 @@ void PIDCalculations()
   //PID INPUTS//
 
   if (speedMode){
-    Input = averagespeed100;
+    Input = speed100;
     Setpoint = Target100;
   }
   else{
@@ -396,7 +396,7 @@ void PIDCalculations()
     }
     myPID.Compute();
      if (debug)Serial.print(Output);
-     if (debug)Serial.print("<output|");
+     if (debug)Serial.print("<ServoPos|");
     pos = Output;
 }
 //End Function
@@ -410,7 +410,7 @@ void MainDisplay()
   //GPS Time Display//
   hours = gps.time.hour() + hourOffset;
   if (hours < 0) hours += 24;
-  if (hours > 24) hours -= 24;
+  if (hours > 0) hours -= 24;
   minutes = gps.time.minute();
   seconds = gps.time.second();
   mydisp.setFont(10);
@@ -452,8 +452,6 @@ void MainDisplay()
     mydisp.print("RPM");
   }
   if (mode == 2) {
-    targetSpeedWhole = TargetSpeedInt / 10;
-    targetSpeedDecimal = TargetSpeedInt %10;
     printTargetSpeed();
   }
 
@@ -1119,7 +1117,7 @@ void PIDKpmenu(){
   mydisp.setPrintPos(0, 3);
   mydisp.print("Rate: ");
   mydisp.print(aggKp);
-  int Kp100 = 0;
+  int Kp100 = aggKp * 100;
  do{
     switch(read_encoder())
      {
@@ -1137,6 +1135,7 @@ void PIDKpmenu(){
         mydisp.setPrintPos(0, 3);
         mydisp.print("Rate: ");
         aggKp = aggKp * 100;
+        Kp100 = aggKp;
         aggKp = aggKp - 1;
         aggKp /= 100;
         mydisp.print(aggKp);mydisp.print("  ");
@@ -1170,7 +1169,7 @@ void PIDKimenu(){
   mydisp.setPrintPos(0, 3);
   mydisp.print("Speed: ");
   mydisp.print(aggKi);
-  int Ki100 = 0;
+  int Ki100 = aggKi * 100;
  do{
     switch(read_encoder())
      {
@@ -1188,6 +1187,7 @@ void PIDKimenu(){
         mydisp.setPrintPos(0, 3);
         mydisp.print("Speed: ");
         aggKi = aggKi * 100;
+        Ki100 = aggKi;
         aggKi = aggKi - 1;
         aggKi = aggKi / 100;
         mydisp.print(aggKi);mydisp.print("     ");
@@ -1221,7 +1221,7 @@ void PIDKdmenu(){
   mydisp.setPrintPos(0, 3);
   mydisp.print("Rate: ");
   mydisp.print(aggKd);
-  int Kd100 = 0;
+  int Kd100 = aggKd * 100;
  do{
     switch(read_encoder())
      {
@@ -1239,6 +1239,7 @@ void PIDKdmenu(){
         mydisp.setPrintPos(0, 3);
         mydisp.print("Rate: ");
         aggKd = aggKd * 100;
+        Kd100 = aggKd;
         aggKd = aggKd - 1;
         aggKd /= 100;
         mydisp.print(aggKd);mydisp.print("  ");
@@ -1260,47 +1261,6 @@ void PIDKdmenu(){
    while (stillSelecting == true);
 }
 
-// void menuSubMenuTemplate(){
-//   boolean stillSelecting = true;
-//   mydisp.clearScreen();
-//   mydisp.setFont(10);
-//   mydisp.setPrintPos(0, 0);
-//   mydisp.print("Max Throttle ");  
-//   mydisp.setPrintPos(0, 1);
-//  do{
-//     /*
-//     IF YOU WANT OTHER CODE GOING ON IN THE BACKGROUND
-//     WHILE WAITING FOR THE USER TO DO SOMETHING, PUT IT HERE
-//     */
-//     switch(read_encoder())
-//      {
-//      case 1:  // ENCODER UP
-//         timeoutTime = millis()+menuTimeout;
-//         mydisp.setPrintPos(0, 1);
-//         mydisp.print("value Here");
-//       break;
-
-//       case 2:    //ENCODER DOWN
-//         timeoutTime = millis()+menuTimeout;
-//         mydisp.setPrintPos(0, 1);
-//         mydisp.print("value Here");
-//        break;
-
-//       case 4:  // ENCODER BUTTON SHORT PRESS
-//         timeoutTime = millis()+menuTimeout;
-//         stillSelecting = false;
-//        break;
-
-//       case 8:  // ENCODER BUTTON LONG PRESS
-//        break;
-
-//       case 16:  // ENCODER BUTTON NULL
-//        break;
-
-//     }
-//   }
-//    while (stillSelecting == true);
-// }
 
 void printTargetSpeed()
 {
