@@ -37,7 +37,7 @@ boolean stillSelecting = true;
 double Setpoint, Input, Output;
 double aggKp = 1, aggKi = 1 , aggKd = 1; //NEED TO MAKE MENU OPTION FOR ADJUSTMENTS ON THE FLY
 double consKp = 1, consKi = 1, consKd = 1; //NEED TO MAKE MENU OPTION FOR ADJUSTMENTS ON THE FLY
-PID myPID(&Input, &Output, &Setpoint, consKp, consKi, consKd, REVERSE);
+PID myPID(&Input, &Output, &Setpoint, aggKp, aggKp, aggKp, REVERSE);
 #define MOVECURSOR 1  // constants for indicating whether cursor should be redrawn
 #define MOVELIST 2  // constants for indicating whether cursor should be redrawn
 byte totalRows = 6;  // total rows of LCD
@@ -726,6 +726,7 @@ void minThrottleMenu(){
 
       case 4:  // ENCODER BUTTON SHORT PRESS
         stillSelecting = false;
+         myPID.SetOutputLimits(minServo, maxServo);
         if (Reverse) EEPROM.write(21,minServo /10); else EEPROM.write(20,maxServo /10);
         break;
 
@@ -770,6 +771,7 @@ void maxThrottleMenu(){
       case 4:  // ENCODER BUTTON SHORT PRESS
         stillSelecting = false;
         if (Reverse) EEPROM.write(20,maxServo /10); else EEPROM.write(21,minServo /10);
+         myPID.SetOutputLimits(minServo, maxServo);
         break;
 
       case 8:  // ENCODER BUTTON LONG PRESS
@@ -1143,7 +1145,7 @@ void PIDKpmenu(){
 
       case 4:  // ENCODER BUTTON SHORT PRESS
         stillSelecting = false;
-        writeWord(12,Kp100);
+        writeWord(12,Kp100 + 1);
       break;
 
       case 8:  // ENCODER BUTTON LONG PRESS
@@ -1195,7 +1197,7 @@ void PIDKimenu(){
 
       case 4:  // ENCODER BUTTON SHORT PRESS
         stillSelecting = false;
-        writeWord(14,Ki100);
+        writeWord(14,Ki100 + 1);
        break;
 
       case 8:  // ENCODER BUTTON LONG PRESS
@@ -1247,7 +1249,7 @@ void PIDKdmenu(){
 
       case 4:  // ENCODER BUTTON SHORT PRESS
         stillSelecting = false;
-        writeWord(16,Kd100);
+        writeWord(16,Kd100 + 1);
       break;
 
       case 8:  // ENCODER BUTTON LONG PRESS
