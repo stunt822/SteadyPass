@@ -35,8 +35,8 @@ boolean firstLoopOnStart = true;
 boolean firstMainDispLoop =true;
 boolean stillSelecting = true;
 double Setpoint, Input, Output;
-double aggKp = 1, aggKi = 1 , aggKd = 1; //NEED TO MAKE MENU OPTION FOR ADJUSTMENTS ON THE FLY
-double consKp = 1, consKi = 1, consKd = 1; //NEED TO MAKE MENU OPTION FOR ADJUSTMENTS ON THE FLY
+double aggKp = .25, aggKi = .25 , aggKd = .50; //NEED TO MAKE MENU OPTION FOR ADJUSTMENTS ON THE FLY
+double consKp = .10, consKi = .10, consKd = .25; //NEED TO MAKE MENU OPTION FOR ADJUSTMENTS ON THE FLY
 PID myPID(&Input, &Output, &Setpoint, aggKp, aggKp, aggKp, REVERSE);
 #define MOVECURSOR 1  // constants for indicating whether cursor should be redrawn
 #define MOVELIST 2  // constants for indicating whether cursor should be redrawn
@@ -153,8 +153,9 @@ void setup()
   delay(5000);
   mydisp.clearScreen();
   delay(500);
-  mydisp.setPrintPos(0, 1);
   mydisp.setFont(30);
+  mydisp.setPrintPos(0, 1);
+
   mydisp.print("ACQUIRING SIGNAL");
   mydisp.setPrintPos(0, 3);
   mydisp.print("  PLEASE WAIT ");
@@ -280,9 +281,10 @@ void loop ()
   if (buttonTimes > buttonTarget){
     mydisp.clearScreen();
     mydisp.setFont(10);
+    mydisp.setPrintPos(0, 0);
     delay(500);
   }
-  while (buttonTimes > buttonTarget) {mydisp.print("Main Menu"); Menu();}
+  while (buttonTimes > buttonTarget) {mydisp.print("Main Menu"); delay(500); Menu();}
   if (firstLoopOnStart) {firstLoopOnStart = false;}
 }
 
@@ -578,7 +580,7 @@ void Menu(){
             redraw = MOVELIST;
           break;
           case 8:  // menu item 9 selected
-          tempUnitMenu();
+            tempUnitMenu();
           redraw = MOVELIST;
           break;
           case 9:  // menu item 10 selected
@@ -671,7 +673,7 @@ int read_encoder(){
     if (digitalRead(PinSW) == LOW)
       {
          inMenuPress++;
-          delay(300);
+          delay(200);
       }
     else if (inMenuPress > 0) {
         inMenuPress = 0;
@@ -679,7 +681,7 @@ int read_encoder(){
           mydisp.setFont(20);
           mydisp.setPrintPos(0,0);
           mydisp.print("ENTER");
-          delay(1000);
+          delay(500);
           mydisp.clearScreen();
           return btnPress;
       }
@@ -706,6 +708,9 @@ void minThrottleMenu(){
   mydisp.setPrintPos(0, 0);
   mydisp.print("Min Throttle ");  
   mydisp.setPrintPos(0, 1);
+  mydisp.print("Servo Highest position, Gives most cable slack");  
+  mydisp.setPrintPos(0, 3);
+  mydisp.print("Position: ");
   if (Reverse) mydisp.print(minServo); else mydisp.print(maxServo);  mydisp.print("    ");
  do{  
     if (Reverse) myservo.writeMicroseconds( minServo + maxServo - pos);
@@ -713,14 +718,24 @@ void minThrottleMenu(){
     switch(read_encoder())
     {
       case 1:  // ENCODER UP
-        if (Reverse) minServo +=10; else maxServo+=10;
-        mydisp.setPrintPos(0, 1);
+        if (Reverse) {
+          if (minServo >= maxServo){minServo = maxServo - 10;}
+          else {minServo +=10;}
+        } 
+        else {maxServo +=10;}
+        mydisp.setPrintPos(0, 3);
+        mydisp.print("Position: ");
         if (Reverse) mydisp.print(minServo); else mydisp.print(maxServo);  mydisp.print("    ");
-        break;
+      break;
 
       case 2:    //ENCODER DOWN
-        if (Reverse) minServo -=10; else maxServo -=10;
-        mydisp.setPrintPos(0, 1);
+        if(!Reverse){
+          if (maxServo <= minServo){maxServo = minServo + 10;}
+          else {maxServo -=10;}
+        }
+        else {minServo -=10;}
+        mydisp.setPrintPos(0, 3);
+        mydisp.print("Position: ");
         if (Reverse) mydisp.print(minServo); else mydisp.print(maxServo);  mydisp.print("    ");
         break;
 
@@ -748,8 +763,11 @@ void maxThrottleMenu(){
   mydisp.clearScreen();
   mydisp.setFont(10);
   mydisp.setPrintPos(0, 0);
-  mydisp.print("Max Throttle ");  
+  mydisp.print("Min Throttle ");  
   mydisp.setPrintPos(0, 1);
+  mydisp.print("Servo lowest position, Gives NO cable slack");  
+  mydisp.setPrintPos(0, 3);
+  mydisp.print("Position: ");
   if (Reverse) mydisp.print(maxServo); else mydisp.print(minServo);  mydisp.print("    ");
  do{ 
     if (Reverse) myservo.writeMicroseconds( minServo + maxServo - pos);
@@ -757,14 +775,24 @@ void maxThrottleMenu(){
     switch(read_encoder())
     {
       case 1:  // ENCODER UP
-        if (Reverse) minServo +=10; else minServo+=10;
-        mydisp.setPrintPos(0, 1);
+        if(!Reverse){
+          if (minServo >= maxServo){minServo = maxServo - 10;}
+          else {minServo +=10;}
+        }
+        else {maxServo +=10;}
+        mydisp.setPrintPos(0, 3);
+        mydisp.print("Position: ");
         if (Reverse) mydisp.print(minServo); else mydisp.print(minServo);  mydisp.print("    ");
         break;
 
       case 2:    //ENCODER DOWN
-        if (Reverse) minServo -=10; else minServo -=10;
-        mydisp.setPrintPos(0, 1);
+        if (Reverse) {
+          if (maxServo <= minServo){maxServo = minServo + 10;}
+          else {maxServo -=10;}
+        } 
+        else {minServo -=10;}
+        mydisp.setPrintPos(0, 3);
+        mydisp.print("Position: ");
         if (Reverse) mydisp.print(minServo); else mydisp.print(minServo);  mydisp.print("    ");
         break;
 
@@ -1080,7 +1108,7 @@ void tempUnitMenu(){
  do{
     switch(read_encoder())
      {
-     case 1:  // ENCODER UP
+      case 1:  // ENCODER UP
         celsius = !celsius;
         mydisp.setPrintPos(0, 1);
         if (celsius) mydisp.print("Celsius "); else mydisp.print("Farenheit ");
@@ -1090,19 +1118,19 @@ void tempUnitMenu(){
         celsius = !celsius;
         mydisp.setPrintPos(0, 1);
         if (celsius) mydisp.print("Celsius "); else mydisp.print("Farenheit ");
-       break;
+      break;
 
       case 4:  // ENCODER BUTTON SHORT PRESS
         stillSelecting = false;
         if (celsius) EEPROM.write(29,1); else EEPROM.write(29,0);
-       break;
+      break;
 
-     case 8:  // ENCODER BUTTON LONG PRESS
-         returnToMainDisp(); 
-     break;
+      case 8:  // ENCODER BUTTON LONG PRESS
+        returnToMainDisp(); 
+      break;
 
       case 16:  // ENCODER BUTTON NULL
-       break;
+      break;
     }
   }
    while (stillSelecting == true);
@@ -1115,7 +1143,7 @@ void PIDKpmenu(){
   mydisp.setPrintPos(0, 0);
   mydisp.print("Rate of Adjustment"); 
   mydisp.setPrintPos(0, 1); 
-  mydisp.print("Default rate = 1");  
+  mydisp.print("Default rate = .25");  
   mydisp.setPrintPos(0, 3);
   mydisp.print("Rate: ");
   mydisp.print(aggKp);
@@ -1167,7 +1195,7 @@ void PIDKimenu(){
   mydisp.setPrintPos(0, 0);
   mydisp.print("Speed of adjustment");
   mydisp.setPrintPos(0, 1);
-  mydisp.print("default = 2");
+  mydisp.print("default = .25");
   mydisp.setPrintPos(0, 3);
   mydisp.print("Speed: ");
   mydisp.print(aggKi);
@@ -1219,7 +1247,7 @@ void PIDKdmenu(){
   mydisp.setPrintPos(0, 0);
   mydisp.print("Predictive Change");  
   mydisp.setPrintPos(0, 1);
-  mydisp.print("Default = 2"); 
+  mydisp.print("Default = .50");
   mydisp.setPrintPos(0, 3);
   mydisp.print("Rate: ");
   mydisp.print(aggKd);
@@ -1284,7 +1312,9 @@ void returnToMainDisp()
 {
   stillSelecting = false;
   buttonTimes = 0;
-  firstMainDispLoop = true; 
+  firstMainDispLoop = true;
+  loop ();
+
 }
 
 
