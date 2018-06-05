@@ -14,7 +14,9 @@
   ---|  17.00 - Sam James - Renamed File from "Limiter_16_53.ino", Added Title and Change History, Added Function comment and Descriptions, Minor code changes made that will not effect the main code.
   ---|  17.01 - ''''''''' - Remade speed and RPM calc into one function.
   ---|  17.02 - ''''''''' - Created knob and button switches. Long press, short press,knob up, and knob down. Added basic scroll menu no actual options to set yet
-  ---|  18    - ''''''''' - New Menu, PID functioning correctly, optimizations,
+  ---|  18    - ''''''''' - New Menu, PID functioning correctly, optimizations
+  ---|  18.01 - ''''''''' - Screen redraw fix, changed description on min/max servo, Kpid settings default text changed, exit from any >>>
+  ---|  ''''' - >>>>>>>>>>> menu with long press, PID now pulls range change without reboot, created settings initialization on first boot
 */
 
 //******LIBRARYS******
@@ -28,7 +30,7 @@
 #include <PID_v1.h>
 //---------------------
 
-byte CurrentVersion = 18;
+double CurrentVersion = 18.01;
 
 //*************INITIALIZING DEFINITIONS*************
 boolean firstLoopOnStart = true;
@@ -52,7 +54,6 @@ int averagespeed100 = 0;
 
 TinyGPSPlus gps;                                //required for TinyGPSplus Library
 DigoleSerialDisp mydisp(9, 8, 10);              //Pin Config SPI | 9: data | 8:clock | 10: SS | you can assign 255 to SS, and hard ground SS pin on module
-boolean debug = true;                          //Debug mode
 boolean led = false;                            //LED on | off
 float voltage = 0, volt1, volt2;                //voltage value
 byte cylCoeff = 6;                               //Number of Cylinders
@@ -139,7 +140,7 @@ int read_encoder();                          //Reads knob up/down/press/longpres
 //************************************************************************************************|
 void setup()
 {
-  if (debug)Serial.begin(9600);
+  //Serial.begin(9600);
   delay (100);
   Serial1.begin(9600);   //GPS device
   delay (100);
@@ -148,7 +149,7 @@ void setup()
   mydisp.setPrintPos(0, 1);
   mydisp.print("   ");  delay(100);  mydisp.print("STEADYPASS");delay(1000);
   mydisp.setPrintPos(0, 3);
-  mydisp.print("  Version: ");
+  mydisp.print(" Version: ");
   mydisp.print(CurrentVersion);
   delay(5000);
   mydisp.clearScreen();
@@ -156,6 +157,36 @@ void setup()
   mydisp.setFont(30);
   mydisp.setPrintPos(0, 1);
 
+  //***CHECKING FOR FIRST BOOT SETTINGS***
+    boolean initializeMemory = true;
+    if (EEPROM.read(69) == 69 ) {initializeMemory = false;}
+    if (initializeMemory){
+    mydisp.setFont(30);
+    mydisp.setPrintPos(0, 1);
+    mydisp.print("   FIRST BOOT ");
+    mydisp.setPrintPos(0, 3);
+    mydisp.print(" INITIALIZE MEM  ");
+    delay(2000);
+    EEPROM.write(11,6);
+    EEPROM.write(12,0);
+    EEPROM.write(13,25);
+    EEPROM.write(14,0);
+    EEPROM.write(15,25);
+    EEPROM.write(16,0);
+    EEPROM.write(17,50);
+    EEPROM.write(18,1);
+    EEPROM.write(19,12);
+    EEPROM.write(20,255);
+    EEPROM.write(21,0);
+    EEPROM.write(29,1);
+    EEPROM.write(30,10);
+    EEPROM.write(31,0);
+    EEPROM.write(69,69);
+    mydisp.clearScreen();
+  }
+
+  mydisp.setFont(30);
+  mydisp.setPrintPos(0, 1);
   mydisp.print("ACQUIRING SIGNAL");
   mydisp.setPrintPos(0, 3);
   mydisp.print("  PLEASE WAIT ");
@@ -177,6 +208,11 @@ void setup()
   for (int thisReading = 0; thisReading < numReadings; thisReading++) {
   readings[thisReading] = 0;
   }
+
+  
+
+
+
   //******************LOADING SAVED SETTINGS*******************
     cylCoeff = EEPROM.read(11);
     aggKp = readWord(12) / 100.00;
@@ -206,7 +242,8 @@ void loop ()
 {
   if (led) {digitalWrite(13, LOW); led = false;}
   else {digitalWrite(13, HIGH); led = true;}
-  smartDelay(50);
+  //smartDelay(50);
+  delay(200);
   if (firstLoopOnStart) {mydisp.clearScreen();delay(100);}
   if (gps.speed.isValid()){speed100 = 100 * gps.speed.mph();}
   //speed100 = 100 * speedGpsD;
@@ -230,8 +267,8 @@ void loop ()
       mydisp.print(" ! DECREASE !     ");
       mydisp.setPrintPos(0, 1);
       mydisp.print(" ! THROTTLE !     ");
-      smartDelay(50);
-      
+      //smartDelay(50);
+      delay(200);
       if (gps.speed.isValid())
       {
         speed100 = 100 * gps.speed.mph();
@@ -380,14 +417,14 @@ void PIDCalculations()
     Input = readRpm();
     Setpoint = targetRPM;
   }
-    if (debug)Serial.print(Input);
-    if (debug)Serial.print("<speed|");
-    if (debug)Serial.print(Setpoint);
-    if (debug)Serial.print("<target|");
+//    Serial.print(Input);
+//    Serial.print("<speed|");
+//    Serial.print(Setpoint);
+//    Serial.print("<target|");
     double gap = abs(Setpoint - Input);
     gap = gap / 10;
-    if (debug)Serial.print(gap);
-    if (debug)Serial.print("<gap|");
+//    Serial.print(gap);
+//    Serial.print("<gap|");
     if (gap < 50)
     {
       myPID.SetTunings(aggKp, aggKi, aggKd);
@@ -397,8 +434,8 @@ void PIDCalculations()
       myPID.SetTunings(aggKp, aggKi, aggKd);
     }
     myPID.Compute();
-     if (debug)Serial.print(Output);
-     if (debug)Serial.print("<ServoPos|");
+//     Serial.print(Output);
+//     Serial.print("<ServoPos|");
     pos = Output;
 }
 //End Function
@@ -418,32 +455,28 @@ void MainDisplay()
   mydisp.setFont(10);
   mydisp.setPrintPos(0, 1);
   mydisp.print(hours); mydisp.print(":"); if (minutes < 10) mydisp.print("0"); mydisp.print(minutes); mydisp.print(":"); if (seconds < 10) mydisp.print("0"); mydisp.print(seconds); mydisp.print("    ");
+  //print word "GPS"//
+  mydisp.setFont(10);
+  mydisp.setPrintPos(18, 3);
+  mydisp.setTextPosOffset(2, -2);
+  mydisp.print("GPS");
 
-  
-  if (firstMainDispLoop){
-    //print word "GPS"//
-    mydisp.setFont(10);
-    mydisp.setPrintPos(18, 3);
-    mydisp.setTextPosOffset(2, -2);
-    mydisp.print("GPS");
+  //Print word "MPH" or "KPH"//
+  mydisp.setPrintPos(18, 4);
+  mydisp.setTextPosOffset(2, -3);
+  if (mph) mydisp.print("MPH"); else mydisp.print("KPH");
 
-    //Print word "MPH" or "KPH"//
-    mydisp.setPrintPos(18, 4);
-    mydisp.setTextPosOffset(2, -3);
-    if (mph) mydisp.print("MPH"); else mydisp.print("KPH");
+  //Print word "POWER"//
+  mydisp.setPrintPos(0, 0);
+  mydisp.print("POWER ");
+  if (delayCheck < millis()){
+    delayCheck = millis() + 500;
+    throttlePer = maxServo - pos;
+    throttlePer = throttlePer / (maxServo - minServo);
+    throttlePer *= 100;
+    //roundedThrottlePer = (int)(throttlePer);
+    mydisp.print((int)(throttlePer)); mydisp.print("  ");
   }
-
-    //Print word "POWER"//
-    mydisp.setPrintPos(0, 0);
-    mydisp.print("POWER ");
-    if (delayCheck < millis()){
-      delayCheck = millis() + 500;
-      throttlePer = maxServo - pos;
-      throttlePer = throttlePer / (maxServo - minServo);
-      throttlePer *= 100;
-      //roundedThrottlePer = (int)(throttlePer);
-      mydisp.print((int)(throttlePer)); mydisp.print("  ");
-    }
   
   //Print word depending on mode selection//
   mydisp.setFont(18);
@@ -708,8 +741,10 @@ void minThrottleMenu(){
   mydisp.setPrintPos(0, 0);
   mydisp.print("Min Throttle ");  
   mydisp.setPrintPos(0, 1);
-  mydisp.print("Servo Highest position, Gives most cable slack");  
-  mydisp.setPrintPos(0, 3);
+  mydisp.print("Servo high position");  
+  mydisp.setPrintPos(0, 2); 
+  mydisp.print("Gives max cable slack");
+  mydisp.setPrintPos(0, 4);
   mydisp.print("Position: ");
   if (Reverse) mydisp.print(minServo); else mydisp.print(maxServo);  mydisp.print("    ");
  do{  
@@ -723,7 +758,7 @@ void minThrottleMenu(){
           else {minServo +=10;}
         } 
         else {maxServo +=10;}
-        mydisp.setPrintPos(0, 3);
+        mydisp.setPrintPos(0, 4);
         mydisp.print("Position: ");
         if (Reverse) mydisp.print(minServo); else mydisp.print(maxServo);  mydisp.print("    ");
       break;
@@ -734,7 +769,7 @@ void minThrottleMenu(){
           else {maxServo -=10;}
         }
         else {minServo -=10;}
-        mydisp.setPrintPos(0, 3);
+        mydisp.setPrintPos(0, 4);
         mydisp.print("Position: ");
         if (Reverse) mydisp.print(minServo); else mydisp.print(maxServo);  mydisp.print("    ");
         break;
@@ -763,13 +798,15 @@ void maxThrottleMenu(){
   mydisp.clearScreen();
   mydisp.setFont(10);
   mydisp.setPrintPos(0, 0);
-  mydisp.print("Min Throttle ");  
+  mydisp.print("Max Throttle ");  
   mydisp.setPrintPos(0, 1);
-  mydisp.print("Servo lowest position, Gives NO cable slack");  
-  mydisp.setPrintPos(0, 3);
+  mydisp.print("Servo low position");
+  mydisp.setPrintPos(0, 2); 
+  mydisp.print("Gives NO cable slack");
+  mydisp.setPrintPos(0, 4);
   mydisp.print("Position: ");
   if (Reverse) mydisp.print(maxServo); else mydisp.print(minServo);  mydisp.print("    ");
- do{ 
+ do{
     if (Reverse) myservo.writeMicroseconds( minServo + maxServo - pos);
     else  myservo.writeMicroseconds(pos);   
     switch(read_encoder())
@@ -780,9 +817,9 @@ void maxThrottleMenu(){
           else {minServo +=10;}
         }
         else {maxServo +=10;}
-        mydisp.setPrintPos(0, 3);
+        mydisp.setPrintPos(0, 4);
         mydisp.print("Position: ");
-        if (Reverse) mydisp.print(minServo); else mydisp.print(minServo);  mydisp.print("    ");
+        if (Reverse) mydisp.print(maxServo); else mydisp.print(minServo);  mydisp.print("    ");
         break;
 
       case 2:    //ENCODER DOWN
@@ -791,9 +828,9 @@ void maxThrottleMenu(){
           else {maxServo -=10;}
         } 
         else {minServo -=10;}
-        mydisp.setPrintPos(0, 3);
+        mydisp.setPrintPos(0, 4);
         mydisp.print("Position: ");
-        if (Reverse) mydisp.print(minServo); else mydisp.print(minServo);  mydisp.print("    ");
+        if (Reverse) mydisp.print(maxServo); else mydisp.print(minServo);  mydisp.print("    ");
         break;
 
       case 4:  // ENCODER BUTTON SHORT PRESS
@@ -1104,20 +1141,20 @@ void tempUnitMenu(){
   mydisp.setPrintPos(0, 0);
   mydisp.print("Tempturature Mode ");  
   mydisp.setPrintPos(0, 1);
-  if (celsius) mydisp.print("Celsius "); else mydisp.print("Farenheit ");
+  if (celsius) mydisp.print("Celsius     "); else mydisp.print("Farenheit ");
  do{
     switch(read_encoder())
      {
       case 1:  // ENCODER UP
         celsius = !celsius;
         mydisp.setPrintPos(0, 1);
-        if (celsius) mydisp.print("Celsius "); else mydisp.print("Farenheit ");
+        if (celsius) mydisp.print("Celsius    "); else mydisp.print("Farenheit ");
       break;
 
       case 2:    //ENCODER DOWN
         celsius = !celsius;
         mydisp.setPrintPos(0, 1);
-        if (celsius) mydisp.print("Celsius "); else mydisp.print("Farenheit ");
+        if (celsius) mydisp.print("Celsius    "); else mydisp.print("Farenheit ");
       break;
 
       case 4:  // ENCODER BUTTON SHORT PRESS
@@ -1173,7 +1210,7 @@ void PIDKpmenu(){
 
       case 4:  // ENCODER BUTTON SHORT PRESS
         stillSelecting = false;
-        writeWord(12,Kp100 + 1);
+        writeWord(12,Kp100);
       break;
 
       case 8:  // ENCODER BUTTON LONG PRESS
@@ -1225,7 +1262,7 @@ void PIDKimenu(){
 
       case 4:  // ENCODER BUTTON SHORT PRESS
         stillSelecting = false;
-        writeWord(14,Ki100 + 1);
+        writeWord(14,Ki100);
        break;
 
       case 8:  // ENCODER BUTTON LONG PRESS
@@ -1277,7 +1314,7 @@ void PIDKdmenu(){
 
       case 4:  // ENCODER BUTTON SHORT PRESS
         stillSelecting = false;
-        writeWord(16,Kd100 + 1);
+        writeWord(16,Kd100);
       break;
 
       case 8:  // ENCODER BUTTON LONG PRESS
