@@ -30,7 +30,7 @@
 #include <PID_v1.h>
 //---------------------
 
-double CurrentVersion = 18.01;
+double CurrentVersion = 18.02;
 
 //*************INITIALIZING DEFINITIONS*************
 boolean firstLoopOnStart = true;
@@ -158,9 +158,8 @@ void setup()
   mydisp.setPrintPos(0, 1);
 
   //***CHECKING FOR FIRST BOOT SETTINGS***
-    boolean initializeMemory = true;
-    if (EEPROM.read(69) == 69 ) {initializeMemory = false;}
-    if (initializeMemory){
+    if (EEPROM.read(69) == 69 ) {}
+    else{
     mydisp.setFont(30);
     mydisp.setPrintPos(0, 1);
     mydisp.print("   FIRST BOOT ");
@@ -242,8 +241,8 @@ void loop ()
 {
   if (led) {digitalWrite(13, LOW); led = false;}
   else {digitalWrite(13, HIGH); led = true;}
-  //smartDelay(50);
-  delay(200);
+  smartDelay(50);
+  //delay(200);
   if (firstLoopOnStart) {mydisp.clearScreen();delay(100);}
   if (gps.speed.isValid()){speed100 = 100 * gps.speed.mph();}
   //speed100 = 100 * speedGpsD;
@@ -267,8 +266,8 @@ void loop ()
       mydisp.print(" ! DECREASE !     ");
       mydisp.setPrintPos(0, 1);
       mydisp.print(" ! THROTTLE !     ");
-      //smartDelay(50);
-      delay(200);
+      smartDelay(50);
+      //delay(200);
       if (gps.speed.isValid())
       {
         speed100 = 100 * gps.speed.mph();
@@ -447,14 +446,15 @@ void PIDCalculations()
 void MainDisplay()
 {
   //GPS Time Display//
-  hours = gps.time.hour() + hourOffset;
+  hours = gps.time.hour() + hourOffset - 12;
   if (hours < 0) hours += 24;
   if (hours > 0) hours -= 24;
   minutes = gps.time.minute();
   seconds = gps.time.second();
   mydisp.setFont(10);
   mydisp.setPrintPos(0, 1);
-  mydisp.print(hours); mydisp.print(":"); if (minutes < 10) mydisp.print("0"); mydisp.print(minutes); mydisp.print(":"); if (seconds < 10) mydisp.print("0"); mydisp.print(seconds); mydisp.print("    ");
+  mydisp.print(hours); mydisp.print(":"); if (minutes < 10) mydisp.print("0"); mydisp.print(minutes); mydisp.print(":"); if (seconds < 10) mydisp.print("0"); mydisp.print(seconds); mydisp.print("  ");
+  
   //print word "GPS"//
   mydisp.setFont(10);
   mydisp.setPrintPos(18, 3);
@@ -537,16 +537,16 @@ void Menu(){
   char* menuItems[]={
     "Min Throttle", 
     "Max Throttle", 
-    "Test Servo Range",
-    "Reverse Servo Mode",
+    "Test Servo",
+    "Servo Mode",
     "Engine Cylinders", 
     "Time Zone Offset",
     "Startup Target Speed",
     "Unit of Measure",
-    "Temp",
-    "Rate of Adjustment",
-    "Speed of Adjustment",
-    "Predictive Change",
+    "Temp Sensor",
+    "Proportional Gain",
+    "Integral Gain",
+    "Derivative Gain",
      ""
   };
   while (menuItems[totalMenuItems] != ""){
@@ -808,7 +808,7 @@ void maxThrottleMenu(){
   if (Reverse) mydisp.print(maxServo); else mydisp.print(minServo);  mydisp.print("    ");
  do{
     if (Reverse) myservo.writeMicroseconds( minServo + maxServo - pos);
-    else  myservo.writeMicroseconds(pos);   
+    else  myservo.writeMicroseconds(pos);
     switch(read_encoder())
     {
       case 1:  // ENCODER UP
@@ -857,7 +857,7 @@ void testThrottleMenu(){
   mydisp.clearScreen();
   mydisp.setFont(10);
   mydisp.setPrintPos(0, 0);
-  mydisp.print("Test Throttle Range ");  
+  mydisp.print("Test Servo Range ");  
  do{
     mydisp.setPrintPos(0, 1);
     mydisp.print("("); if (Reverse) mydisp.print(minServo + maxServo - pos); else mydisp.print(pos); mydisp.print(")     ");
@@ -899,7 +899,7 @@ void reverseServoModeMenu(){
   mydisp.clearScreen();
   mydisp.setFont(10);
   mydisp.setPrintPos(0, 0);
-  mydisp.print("Reverse Servo Mode");  
+  mydisp.print("Servo Mode");  
   mydisp.setPrintPos(0, 1);
   if (Reverse) mydisp.print("Reverse Mode");
   if (!Reverse) mydisp.print("Normal Mode");
@@ -1017,21 +1017,28 @@ void timeZoneMenu(){
     switch(read_encoder())
     {
       case 1:  // ENCODER UP
-        hours = gps.time.hour(); + hourOffset - 12;
         if (hourOffset < 24){hourOffset += 1;}
         else {hourOffset = 24;}
+        hours = gps.time.hour(); + hourOffset - 12;
+        if (hours < 0) hours += 24;
+        if (hours > 0) hours -= 24;
+        mydisp.setPrintPos(0, 1);
+        mydisp.print(hours);
         mydisp.setPrintPos(0, 3);
         mydisp.print(hourOffset - 12); mydisp.print("   ");
-        mydisp.setPrintPos(0, 1);
+        
       break;
 
       case 2:  //ENCODER DOWN
-        hours = gps.time.hour(); + hourOffset - 12;
         if (hourOffset > 0){hourOffset -= 1;}
         else {hourOffset = 0;}
+        hours = gps.time.hour(); + hourOffset - 12;
+        if (hours < 0) hours += 24;
+        if (hours > 0) hours -= 24;
+        mydisp.setPrintPos(0, 1);
+        mydisp.print(hours);
         mydisp.setPrintPos(0, 3);
         mydisp.print(hourOffset - 12); mydisp.print("   ");
-        mydisp.setPrintPos(0, 1); 
       break;
 
       case 4:  // ENCODER BUTTON SHORT PRESS
@@ -1178,7 +1185,7 @@ void PIDKpmenu(){
   mydisp.clearScreen();
   mydisp.setFont(10);
   mydisp.setPrintPos(0, 0);
-  mydisp.print("Rate of Adjustment"); 
+  mydisp.print("Proportional Gain"); 
   mydisp.setPrintPos(0, 1); 
   mydisp.print("Default rate = .25");  
   mydisp.setPrintPos(0, 3);
@@ -1230,7 +1237,7 @@ void PIDKimenu(){
   mydisp.clearScreen();
   mydisp.setFont(10);
   mydisp.setPrintPos(0, 0);
-  mydisp.print("Speed of adjustment");
+  mydisp.print("Integral Gain");
   mydisp.setPrintPos(0, 1);
   mydisp.print("default = .25");
   mydisp.setPrintPos(0, 3);
@@ -1282,7 +1289,7 @@ void PIDKdmenu(){
   mydisp.clearScreen();
   mydisp.setFont(10);
   mydisp.setPrintPos(0, 0);
-  mydisp.print("Predictive Change");  
+  mydisp.print("Derivative Gain");  
   mydisp.setPrintPos(0, 1);
   mydisp.print("Default = .50");
   mydisp.setPrintPos(0, 3);
