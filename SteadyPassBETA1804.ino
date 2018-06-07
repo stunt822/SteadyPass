@@ -7,16 +7,15 @@
 ================================================================================================
 ************************************************************************************************
   ---|FILE: SteadyPassV1.ino
-  ---|Created By: Dimitry
+  ---|Initial document Created By: Dimitry
   ---|Description: This is the code used to make everything work
-  ---|Change History
-  ---|  <16.53 - Dimitry - Allversion Prior to 17.00 have been soley created by Dimitry
-  ---|  17.00 - Sam James - Renamed File from "Limiter_16_53.ino", Added Title and Change History, Added Function comment and Descriptions, Minor code changes made that will not effect the main code.
-  ---|  17.01 - ''''''''' - Remade speed and RPM calc into one function.
-  ---|  17.02 - ''''''''' - Created knob and button switches. Long press, short press,knob up, and knob down. Added basic scroll menu no actual options to set yet
-  ---|  18    - ''''''''' - New Menu, PID functioning correctly, optimizations
+  ---|  Change History
+  ---|  16.53 - Dimitry   - Allversion Prior to 17.00 have been soley created by Dimitry
+  ---|  17.xx - Sam James - Renamed File from "Limiter_16_53.ino", Added Title and Change History, Added Function comment and Descriptions, Minor code changes made that will not effect the main code, Remade speed and RPM calc into one function, Created knob and button switches. Long press, short press,knob up, and knob down. Added basic scroll menu.
+  ---|  18.00 - Sam James - New Menu, PID functioning correctly, optimizations
   ---|  18.01 - ''''''''' - Screen redraw fix, changed description on min/max servo, Kpid settings default text changed, exit from any >>>
-  ---|  ''''' - >>>>>>>>>>> menu with long press, PID now pulls range change without reboot, created settings initialization on first boot
+  ---|  18.02 - ''''''''' - menu with long press, PID now pulls range change without reboot, created settings initialization on first boot
+  ---|  18.03 - ''''''''' - Fixed Time Zone on boot and in menu setting, fixed servo pos change on setting change
 */
 
 //******LIBRARYS******
@@ -30,7 +29,7 @@
 #include <PID_v1.h>
 //---------------------
 
-double CurrentVersion = 18.02;
+double CurrentVersion = 18.04;
 
 //*************INITIALIZING DEFINITIONS*************
 boolean firstLoopOnStart = true;
@@ -141,17 +140,19 @@ int read_encoder();                          //Reads knob up/down/press/longpres
 void setup()
 {
   //Serial.begin(9600);
-  delay (100);
+  //delay (100);
   Serial1.begin(9600);   //GPS device
-  delay (100);
+  delay (500);
   mydisp.begin();delay(3000); mydisp.clearScreen();  delay(100);
   mydisp.setFont(30);
   mydisp.setPrintPos(0, 1);
   mydisp.print("   ");  delay(100);  mydisp.print("STEADYPASS");delay(1000);
+  mydisp.setPrintPos(0, 2);
+  mydisp.print("      ");  delay(100);  mydisp.print("BETA ");delay(1000);
   mydisp.setPrintPos(0, 3);
   mydisp.print(" Version: ");
   mydisp.print(CurrentVersion);
-  delay(5000);
+  delay(3000);
   mydisp.clearScreen();
   delay(500);
   mydisp.setFont(30);
@@ -448,7 +449,7 @@ void MainDisplay()
   //GPS Time Display//
   hours = gps.time.hour() + hourOffset - 12;
   if (hours < 0) hours += 24;
-  if (hours > 0) hours -= 24;
+  if (hours > 24) hours -= 24;
   minutes = gps.time.minute();
   seconds = gps.time.second();
   mydisp.setFont(10);
@@ -480,11 +481,11 @@ void MainDisplay()
   
   //Print word depending on mode selection//
   mydisp.setFont(18);
-  mydisp.setPrintPos(7, 0);
-  if (mode == 0) mydisp.print("  OFF  ");
+  mydisp.setPrintPos(6, 0);
+  if (mode == 0) mydisp.print("  OFF ");
   if (mode == 1) {
     mydisp.print(targetRPM);
-    mydisp.print("RPM");
+    mydisp.print("RPM ");
   }
   if (mode == 2) {
     printTargetSpeed();
@@ -748,8 +749,7 @@ void minThrottleMenu(){
   mydisp.print("Position: ");
   if (Reverse) mydisp.print(minServo); else mydisp.print(maxServo);  mydisp.print("    ");
  do{  
-    if (Reverse) myservo.writeMicroseconds( minServo + maxServo - pos);
-    else  myservo.writeMicroseconds(pos); 
+    myservo.writeMicroseconds(pos); 
     switch(read_encoder())
     {
       case 1:  // ENCODER UP
@@ -761,6 +761,7 @@ void minThrottleMenu(){
         mydisp.setPrintPos(0, 4);
         mydisp.print("Position: ");
         if (Reverse) mydisp.print(minServo); else mydisp.print(maxServo);  mydisp.print("    ");
+        if (Reverse) pos = minServo; else pos = maxServo;
       break;
 
       case 2:    //ENCODER DOWN
@@ -772,7 +773,8 @@ void minThrottleMenu(){
         mydisp.setPrintPos(0, 4);
         mydisp.print("Position: ");
         if (Reverse) mydisp.print(minServo); else mydisp.print(maxServo);  mydisp.print("    ");
-        break;
+        if (Reverse) pos = minServo; else pos = maxServo;
+      break;
 
       case 4:  // ENCODER BUTTON SHORT PRESS
         stillSelecting = false;
@@ -807,8 +809,7 @@ void maxThrottleMenu(){
   mydisp.print("Position: ");
   if (Reverse) mydisp.print(maxServo); else mydisp.print(minServo);  mydisp.print("    ");
  do{
-    if (Reverse) myservo.writeMicroseconds( minServo + maxServo - pos);
-    else  myservo.writeMicroseconds(pos);
+    myservo.writeMicroseconds(pos);
     switch(read_encoder())
     {
       case 1:  // ENCODER UP
@@ -820,6 +821,7 @@ void maxThrottleMenu(){
         mydisp.setPrintPos(0, 4);
         mydisp.print("Position: ");
         if (Reverse) mydisp.print(maxServo); else mydisp.print(minServo);  mydisp.print("    ");
+        if (Reverse) pos = maxServo; else pos = minServo;
         break;
 
       case 2:    //ENCODER DOWN
@@ -831,6 +833,7 @@ void maxThrottleMenu(){
         mydisp.setPrintPos(0, 4);
         mydisp.print("Position: ");
         if (Reverse) mydisp.print(maxServo); else mydisp.print(minServo);  mydisp.print("    ");
+        if (Reverse) pos = maxServo; else pos = minServo;
         break;
 
       case 4:  // ENCODER BUTTON SHORT PRESS
@@ -1013,17 +1016,18 @@ void timeZoneMenu(){
   mydisp.print(hours); mydisp.print(":"); if (minutes < 10) mydisp.print("0"); mydisp.print(minutes); mydisp.print(":"); if (seconds < 10) mydisp.print("0"); mydisp.print(seconds); mydisp.print("   ");
   mydisp.setPrintPos(0, 3);
   mydisp.print(hourOffset - 12); mydisp.print("   ");
-  do{  
+  do{ 
+    mydisp.setPrintPos(0, 1); 
+    mydisp.print(hours); mydisp.print(":"); if (minutes < 10) mydisp.print("0"); mydisp.print(minutes); mydisp.print(":"); if (seconds < 10) mydisp.print("0"); mydisp.print(seconds); mydisp.print("   ");
+    delay(50);
     switch(read_encoder())
     {
       case 1:  // ENCODER UP
         if (hourOffset < 24){hourOffset += 1;}
         else {hourOffset = 24;}
-        hours = gps.time.hour(); + hourOffset - 12;
+        hours = gps.time.hour() + hourOffset - 12;
         if (hours < 0) hours += 24;
-        if (hours > 0) hours -= 24;
-        mydisp.setPrintPos(0, 1);
-        mydisp.print(hours);
+        if (hours > 24) hours -= 24;
         mydisp.setPrintPos(0, 3);
         mydisp.print(hourOffset - 12); mydisp.print("   ");
         
@@ -1032,11 +1036,9 @@ void timeZoneMenu(){
       case 2:  //ENCODER DOWN
         if (hourOffset > 0){hourOffset -= 1;}
         else {hourOffset = 0;}
-        hours = gps.time.hour(); + hourOffset - 12;
+        hours = gps.time.hour() + hourOffset - 12;
         if (hours < 0) hours += 24;
-        if (hours > 0) hours -= 24;
-        mydisp.setPrintPos(0, 1);
-        mydisp.print(hours);
+        if (hours > 24) hours -= 24;
         mydisp.setPrintPos(0, 3);
         mydisp.print(hourOffset - 12); mydisp.print("   ");
       break;
