@@ -29,7 +29,7 @@
 #include <PID_v1.h>
 //---------------------
 
-double CurrentVersion = 18.04;
+double CurrentVersion = 18.03;
 
 //*************INITIALIZING DEFINITIONS*************
 boolean firstLoopOnStart = true;
@@ -142,17 +142,15 @@ void setup()
   //Serial.begin(9600);
   //delay (100);
   Serial1.begin(9600);   //GPS device
-  delay (500);
+  delay (100);
   mydisp.begin();delay(3000); mydisp.clearScreen();  delay(100);
   mydisp.setFont(30);
   mydisp.setPrintPos(0, 1);
   mydisp.print("   ");  delay(100);  mydisp.print("STEADYPASS");delay(1000);
-  mydisp.setPrintPos(0, 2);
-  mydisp.print("      ");  delay(100);  mydisp.print("BETA ");delay(1000);
   mydisp.setPrintPos(0, 3);
   mydisp.print(" Version: ");
   mydisp.print(CurrentVersion);
-  delay(3000);
+  delay(5000);
   mydisp.clearScreen();
   delay(500);
   mydisp.setFont(30);
@@ -1016,18 +1014,17 @@ void timeZoneMenu(){
   mydisp.print(hours); mydisp.print(":"); if (minutes < 10) mydisp.print("0"); mydisp.print(minutes); mydisp.print(":"); if (seconds < 10) mydisp.print("0"); mydisp.print(seconds); mydisp.print("   ");
   mydisp.setPrintPos(0, 3);
   mydisp.print(hourOffset - 12); mydisp.print("   ");
-  do{ 
-    mydisp.setPrintPos(0, 1); 
-    mydisp.print(hours); mydisp.print(":"); if (minutes < 10) mydisp.print("0"); mydisp.print(minutes); mydisp.print(":"); if (seconds < 10) mydisp.print("0"); mydisp.print(seconds); mydisp.print("   ");
-    delay(50);
+  do{  
     switch(read_encoder())
     {
       case 1:  // ENCODER UP
         if (hourOffset < 24){hourOffset += 1;}
         else {hourOffset = 24;}
-        hours = gps.time.hour() + hourOffset - 12;
+        hours = gps.time.hour(); + hourOffset - 12;
         if (hours < 0) hours += 24;
         if (hours > 24) hours -= 24;
+        mydisp.setPrintPos(0, 1);
+        mydisp.print(hours);
         mydisp.setPrintPos(0, 3);
         mydisp.print(hourOffset - 12); mydisp.print("   ");
         
@@ -1036,9 +1033,11 @@ void timeZoneMenu(){
       case 2:  //ENCODER DOWN
         if (hourOffset > 0){hourOffset -= 1;}
         else {hourOffset = 0;}
-        hours = gps.time.hour() + hourOffset - 12;
+        hours = gps.time.hour(); + hourOffset - 12;
         if (hours < 0) hours += 24;
         if (hours > 24) hours -= 24;
+        mydisp.setPrintPos(0, 1);
+        mydisp.print(hours);
         mydisp.setPrintPos(0, 3);
         mydisp.print(hourOffset - 12); mydisp.print("   ");
       break;
