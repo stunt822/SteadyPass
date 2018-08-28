@@ -75,7 +75,7 @@ void setup()
   mydisp.print("   ");  delay(100);  mydisp.print("INITIALIZE ");
   mydisp.setPrintPos(0, 3);
   mydisp.setFont(10);
-  mydisp.print("    Select Presets ");
+  mydisp.print(" wait for GPS signal ");
   delay(5000);
   mydisp.clearScreen();
   delay(500);
@@ -83,12 +83,9 @@ void setup()
   mydisp.setPrintPos(0, 1);
 
   //  ***CHECKING FOR FIRST BOOT SETTINGS***
-  if (EEPROM.read(69) == 69 ) {}
-  else {
+  
     mydisp.setFont(30);
-    mydisp.setPrintPos(0, 1);
-    mydisp.print("   FIRST BOOT ");
-    mydisp.setPrintPos(0, 3);
+    mydisp.setPrintPos(0, 2);
     mydisp.print(" INITIALIZE MEM  ");
     delay(2000);
     EEPROM.write(11, 6);
@@ -107,9 +104,7 @@ void setup()
     EEPROM.write(31, 0);
     EEPROM.write(32, 0);
     EEPROM.write(33, 30);
-    EEPROM.write(69, 69);
     mydisp.clearScreen();
-  }
 
   mydisp.setFont(30);
   mydisp.setPrintPos(0, 1);
