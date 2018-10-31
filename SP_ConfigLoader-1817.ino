@@ -28,7 +28,6 @@ TinyGPSPlus gps;                                //required for TinyGPSplus Libra
 DigoleSerialDisp mydisp(9, 8, 10);              //Pin Config SPI | 9: data | 8:clock | 10: SS | you can assign 255 to SS, and hard ground SS pin on module
 boolean led = false;                            //LED on | off
 byte cylCoeff = 6;                               //Number of Cylinders
-boolean screenFlip = false;
 const byte PinCLK = 2;             //encoder second pin
 const byte PinDT = 3;              // Used for reading DT signal of encoder
 const byte PinSW = 4;              //encoder button
@@ -39,8 +38,9 @@ boolean mph = true;
 int Contrast;
 int targetRPM = 3000;
 boolean Reverse = false;
-int minServo = 1120;
-int maxServo = 1660;
+Servo myservo;
+int minServo = 950;
+int maxServo = 1950;
 int pos = minServo;
 int S = 10;
 volatile boolean TurnDetected = false;
@@ -57,16 +57,18 @@ int read_encoder();                          //Reads knob up/down/press/longpres
 int TargetSpeedInt, Target100 = 500;
 int targetSpeedWhole = TargetSpeedInt / 10;
 int targetSpeedDecimal = TargetSpeedInt %10;
+double accelDampKd = .08;
+int gpsDegree,gpsHDOP,gpsSats,gpsLat,gpsLng,gpsAlt;
+char gpsCourse[2];
+int speed100;
 //************************************************************************************************|
 //*********** PERFORM STARTUP TASKS | DISPLAY STARTUP | GPS CONFIGURATION | READ MEMORY **********|
 //************************************************************************************************|
 void setup()
 {
-  screenFlip = EEPROM.read(32);
   Serial1.begin(9600);
   delay (3000);
   mydisp.begin();
-  if (screenFlip) mydisp.setRotation(2);
   mydisp.clearScreen();  delay(100);
   mydisp.setFont(30);
   mydisp.setPrintPos(0, 1);
@@ -83,10 +85,13 @@ void setup()
   mydisp.setPrintPos(0, 1);
 
   //  ***CHECKING FOR FIRST BOOT SETTINGS***
-  
+  //18.16 using reset code 1
+  if (EEPROM.read(200) == 1 ) {}
+  else {
     mydisp.setFont(30);
     mydisp.setPrintPos(0, 2);
     mydisp.print(" INITIALIZE MEM  ");
+    mydisp.print("  FOR V 18.16  ");
     delay(2000);
     EEPROM.write(11, 6);
     EEPROM.write(12, 0);
@@ -97,15 +102,20 @@ void setup()
     EEPROM.write(17, 8);
     EEPROM.write(18, 1);
     EEPROM.write(19, 12);
-    EEPROM.write(20, 255);
-    EEPROM.write(21, 0);
+    EEPROM.write(20, 195);
+    EEPROM.write(21, 95);
+    EEPROM.write(22, 0);
+    EEPROM.write(23, 8);
+    EEPROM.write(24, 0);
+    EEPROM.write(25, 0);
     EEPROM.write(29, 1);
     EEPROM.write(30, 10);
-    EEPROM.write(31, 0);
+    EEPROM.write(31, 1);
     EEPROM.write(32, 0);
     EEPROM.write(33, 30);
+    EEPROM.write(200, 1);
     mydisp.clearScreen();
-
+  }
   mydisp.setFont(30);
   mydisp.setPrintPos(0, 1);
   mydisp.print("ACQUIRING SIGNAL");
@@ -131,13 +141,10 @@ void setup()
   maxServo = 10 * EEPROM.read(20);
   minServo = 10 * EEPROM.read(21);
   celsius = EEPROM.read(29);
-  Target100 = EEPROM.read(30) * 100;
-  Reverse = EEPROM.read(31);
-  screenFlip = EEPROM.read(32);
+  Target100 = readWord(30);
+  Reverse = EEPROM.read(32);
   Contrast = EEPROM.read(33);
   //----------------LOADED VALUES COMPLETE-------------------
-
-  //m
 
   //******************LOADING GPS CONFIGURATION*******************
   //Serial1.println("$PMTK314,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*29");   //Sets GPS to GTV only
@@ -153,10 +160,64 @@ void loop ()
   mydisp.setContrast(Contrast);
   smartDelay(50);
   //delay(200);
+  if (gps.speed.isValid()){speed100 = 100 * gps.speed.mph();}
+  if (gps.course.isValid()){gpsDegree = gps.course.deg();}
+  if (gps.hdop.isValid()){gpsHDOP = gps.hdop.hdop();} 
+  if (gps.location.isValid()){gpsLat = gps.location.lat();}
+  if (gps.location.isValid()){gpsLng = gps.location.lng();}
+  if (gps.satellites.isValid()){gpsSats = gps.satellites.value();}
+  if (gps.altitude.isValid()){gpsAlt = gps.altitude.meters();}
+
+
+    if (gpsDegree  > 337){gpsCourse[9] = "North";} 
+    if (gpsDegree <=  22){gpsCourse[9] = "North";}
+    if (gpsDegree  > 22){
+      if (gpsDegree <=  67){gpsCourse[9] = "NorthEast";}
+    }
+    if (gpsDegree  > 67){
+      if (gpsDegree <= 112){gpsCourse[9] = "East";}
+    }
+    if (gpsDegree  > 112){
+      if (gpsDegree <= 157){gpsCourse[9] = "SouthEast";}
+    }
+    if (gpsDegree  > 157){
+      if (gpsDegree <= 202){gpsCourse[9] = "South";}
+    }
+    if (gpsDegree  > 202){
+      if (gpsDegree <= 247){gpsCourse[9] = "SouthWest";}
+    }
+    if (gpsDegree  > 247){
+      if (gpsDegree <= 292){gpsCourse[9] = "West";}
+    }
+    if (gpsDegree  > 292){
+      if (gpsDegree <= 337){gpsCourse[9] = "NorthWest";}
+      }
+  Serial.print("speed:");
+    Serial.print(speed100);
+    Serial.print(" ||||| ");
+    Serial.print("HDOP:");
+    Serial.print(gpsHDOP);
+    Serial.print(" ||||| ");
+    Serial.print("Lat coord:");
+    Serial.print(gpsLat);
+    Serial.print(" ||||| ");
+    Serial.print("Lng coord:");
+    Serial.print(gpsLng);
+    Serial.print(" ||||| ");
+    Serial.print("Sat #:");
+    Serial.print(gpsSats);
+    Serial.print(" ||||| ");
+    Serial.print("Alt:");
+    Serial.print(gpsAlt);
+    Serial.print(" ||||| ");
+    Serial.print("course:");
+    Serial.print(gpsCourse);
+    Serial.print(" ||||| ");
+    Serial.print("degree:");
+    Serial.print(gpsDegree);
+    Serial.print(" +++++ ");
   Menu();
 }
-//-----end main----
-//=================
 
 
 //*******************************************************************
@@ -228,11 +289,11 @@ void Menu() {
     "Startup Target Speed",
     "Unit of Measure",
     "Temp Sensor",
-    "Screen Flip",
     "Contrast",
     "Proportional Gain",
     "Integral Gain",
     "Derivative Gain",
+//    "Accel Dampener",
     ""
   };
   while (menuItems[totalMenuItems] != "") {
@@ -303,26 +364,26 @@ void Menu() {
             tempUnitMenu();
             redraw = MOVELIST;
             break;
-          case 9:  // menu item 10 selected
-            screenRotateMenu();
-            redraw = MOVELIST;
-            break;
-          case 10:  // menu item 11 selected
+          case 9:  // menu item 11 selected
             contrastMenu();
             redraw = MOVELIST;
             break;
-          case 11:  // menu item 12 selected
+          case 10:  // menu item 12 selected
             PIDKpmenu();
             redraw = MOVELIST;
             break;
-          case 12:  // menu item 13 selected
+          case 11:  // menu item 13 selected
             PIDKimenu();
             redraw = MOVELIST;
             break;
-          case 13:  // menu item 14 selected
+          case 12:  // menu item 14 selected
             PIDKdmenu();
             redraw = MOVELIST;
             break;
+//          case 13:  // menu item 14 selected
+//            PIDKdOVRmenu();
+//            redraw = MOVELIST;
+//          break;
         }
         break;
 
@@ -445,44 +506,42 @@ void minThrottleMenu() {
   mydisp.setPrintPos(0, 4);
   mydisp.print("Position: ");
   if (Reverse) mydisp.print(minServo); else mydisp.print(maxServo);  mydisp.print("    ");
-  do {
-    switch (read_encoder())
+  mydisp.setPrintPos(0, 6);
+  mydisp.print("Clck:Save Hold:Cancel");
+  
+  do{
+    myservo.writeMicroseconds(pos); 
+    switch(read_encoder())
     {
       case 1:  // ENCODER UP
         if (Reverse) {
-          if (minServo >= maxServo) {
-            minServo = maxServo - 10;
-          }
-          else {
-            minServo += 10;
-          }
-        }
+          if (minServo >= maxServo){minServo = maxServo - 10;}
+          else {minServo +=10;}
+        } 
         else {
-          maxServo += 10;
+          if (maxServo >= 1950){maxServo = 1950;}
+          else {maxServo +=10;}
         }
         mydisp.setPrintPos(0, 4);
         mydisp.print("Position: ");
         if (Reverse) mydisp.print(minServo); else mydisp.print(maxServo);  mydisp.print("    ");
         if (Reverse) pos = minServo; else pos = maxServo;
-        break;
+      break;
 
       case 2:    //ENCODER DOWN
-        if (!Reverse) {
-          if (maxServo <= minServo) {
-            maxServo = minServo + 10;
-          }
-          else {
-            maxServo -= 10;
-          }
-        }
+        if (Reverse) {
+          if (minServo <= 950){minServo = 950;}
+          else {minServo -=10;}
+        } 
         else {
-          minServo -= 10;
+          if (maxServo <= minServo){maxServo = minServo + 10;}
+          else {maxServo -=10;}
         }
         mydisp.setPrintPos(0, 4);
         mydisp.print("Position: ");
         if (Reverse) mydisp.print(minServo); else mydisp.print(maxServo);  mydisp.print("    ");
         if (Reverse) pos = minServo; else pos = maxServo;
-        break;
+      break;
 
       case 4:  // ENCODER BUTTON SHORT PRESS
         stillSelecting = false;
@@ -515,20 +574,21 @@ void maxThrottleMenu() {
   mydisp.setPrintPos(0, 4);
   mydisp.print("Position: ");
   if (Reverse) mydisp.print(maxServo); else mydisp.print(minServo);  mydisp.print("    ");
-  do {
-    switch (read_encoder())
+  mydisp.setPrintPos(0, 6);
+  mydisp.print("Clck:Save Hold:Cancel");
+  
+ do{
+    myservo.writeMicroseconds(pos);
+    switch(read_encoder())
     {
       case 1:  // ENCODER UP
-        if (!Reverse) {
-          if (minServo >= maxServo) {
-            minServo = maxServo - 10;
-          }
-          else {
-            minServo += 10;
-          }
+        if(!Reverse){
+          if (minServo >= maxServo){minServo = maxServo - 10;}
+          else {minServo +=10;}
         }
         else {
-          maxServo += 10;
+          if (maxServo >= 1950) {maxServo = 1950;}
+          else {maxServo += 10;}
         }
         mydisp.setPrintPos(0, 4);
         mydisp.print("Position: ");
@@ -538,16 +598,14 @@ void maxThrottleMenu() {
 
       case 2:    //ENCODER DOWN
         if (Reverse) {
-          if (maxServo <= minServo) {
-            maxServo = minServo + 10;
-          }
-          else {
-            maxServo -= 10;
-          }
-        }
+          if (maxServo <= minServo){maxServo = minServo + 10;}
+          else {maxServo -=10;}
+        } 
         else {
-          minServo -= 10;
-        }
+          if (minServo <= 950){minServo = 950;}
+          else {minServo -= 10;}
+
+          }
         mydisp.setPrintPos(0, 4);
         mydisp.print("Position: ");
         if (Reverse) mydisp.print(maxServo); else mydisp.print(minServo);  mydisp.print("    ");
@@ -568,17 +626,19 @@ void maxThrottleMenu() {
 
     }
   }
-  while (stillSelecting == true);
+   while (stillSelecting == true);
 }
 
-void testThrottleMenu() {
+void testThrottleMenu(){
   boolean stillSelecting = true;
   pos = minServo;
   mydisp.clearScreen();
   mydisp.setFont(10);
   mydisp.setPrintPos(0, 0);
-  mydisp.print("Test Servo Range ");
-  do {
+  mydisp.print("Test Servo Range "); 
+  mydisp.setPrintPos(0, 6);
+  mydisp.print("Clck:Save Hold:Cancel"); 
+ do{
     mydisp.setPrintPos(0, 1);
     mydisp.print("("); if (Reverse) mydisp.print(minServo + maxServo - pos); else mydisp.print(pos); mydisp.print(")     ");
     delay(100);
@@ -586,7 +646,7 @@ void testThrottleMenu() {
     if (pos >= maxServo) S = -1;
     pos += 10 * S;
 
-    switch (read_encoder())
+    switch(read_encoder())
     {
       case 1:  // ENCODER UP
 
@@ -609,7 +669,7 @@ void testThrottleMenu() {
 
     }
   }
-  while (stillSelecting == true);
+   while (stillSelecting == true);
 }
 
 void reverseServoModeMenu() {
@@ -621,6 +681,9 @@ void reverseServoModeMenu() {
   mydisp.setPrintPos(0, 1);
   if (Reverse) mydisp.print("Reverse Mode");
   if (!Reverse) mydisp.print("Normal Mode");
+  mydisp.setPrintPos(0, 6);
+  mydisp.print("Clck:Save Hold:Cancel");
+  
 
   do {
     switch (read_encoder())
@@ -651,7 +714,7 @@ void reverseServoModeMenu() {
 
       case 4:  // ENCODER BUTTON SHORT PRESS
         stillSelecting = false;
-        if (Reverse) EEPROM.write(31, 1); else EEPROM.write(31, 0);
+        if (Reverse) EEPROM.write(32, 1); else EEPROM.write(32, 0);
         break;
 
       case 8:  // ENCODER BUTTON LONG PRESS
@@ -677,6 +740,8 @@ void cylinderCountMenu() {
     mydisp.setPrintPos(0, 2);
     mydisp.print("Ignition Coil Mode");
   }
+  mydisp.setPrintPos(0, 6);
+  mydisp.print("Clck:Save Hold:Cancel");
   do {
 
     switch (read_encoder())
@@ -755,6 +820,8 @@ void timeZoneMenu() {
   mydisp.print(hours); mydisp.print(":"); if (minutes < 10) mydisp.print("0"); mydisp.print(minutes); mydisp.print(":"); if (seconds < 10) mydisp.print("0"); mydisp.print(seconds); mydisp.print("   ");
   mydisp.setPrintPos(0, 3);
   mydisp.print(hourOffset - 12); mydisp.print("   ");
+  mydisp.setPrintPos(0, 6);
+  mydisp.print("Clck:Save Hold:Cancel");
   do {
     gps.encode(Serial1.read());
     hours = gps.time.hour() + hourOffset - 12;
@@ -825,24 +892,28 @@ void defaultTargetSpeedMenu() {
   mydisp.print("Startup Target Speed");
   mydisp.setPrintPos(0, 1);
   printTargetSpeed();
+  mydisp.setPrintPos(0, 6);
+  mydisp.print("Clck:Save Hold:Cancel");
   do {
     switch (read_encoder())
     {
       case 1:  // ENCODER UP
-        Target100 = Target100 + 10;
+        if (Target100 >= 5000){Target100 = 5000;}
+        else {Target100 += 10;}
         mydisp.setPrintPos(0, 1);
         printTargetSpeed();
         break;
 
       case 2:    //ENCODER DOWN
-        Target100 = Target100 - 10;
+        if (Target100 <= 500){Target100 = 500;}
+        else {Target100 -= 10;}
         mydisp.setPrintPos(0, 1);
         printTargetSpeed();
         break;
 
       case 4:  // ENCODER BUTTON SHORT PRESS
         stillSelecting = false;
-        EEPROM.write(30, Target100 / 100);
+        writeWord(30,Target100);
         break;
 
       case 8:  // ENCODER BUTTON LONG PRESS
@@ -865,6 +936,8 @@ void unitMeasureMenu() {
   mydisp.print("Unit of Measure");
   mydisp.setPrintPos(0, 1);
   if (mph) mydisp.print("MPH "); else mydisp.print("KPH ");
+  mydisp.setPrintPos(0, 6);
+  mydisp.print("Clck:Save Hold:Cancel");
   do {
     switch (read_encoder())
     {
@@ -905,6 +978,8 @@ void tempUnitMenu() {
   mydisp.print("Tempturature Mode ");
   mydisp.setPrintPos(0, 1);
   if (celsius) mydisp.print("Celsius     "); else mydisp.print("Farenheit ");
+  mydisp.setPrintPos(0, 6);
+  mydisp.print("Clck:Save Hold:Cancel");
   do {
     switch (read_encoder())
     {
@@ -936,45 +1011,6 @@ void tempUnitMenu() {
   while (stillSelecting == true);
 }
 
-void screenRotateMenu() {
-  boolean stillSelecting = true;
-  mydisp.clearScreen();
-  mydisp.setFont(10);
-  mydisp.setPrintPos(0, 0);
-  mydisp.print("Screen Rotate ");
-  mydisp.setPrintPos(0, 1);
-  if (screenFlip) mydisp.print("Flipped     "); else mydisp.print("Normal ");
-  do {
-    switch (read_encoder())
-    {
-      case 1:  // ENCODER UP
-        screenFlip = !screenFlip;
-        mydisp.setPrintPos(0, 1);
-        if (screenFlip) mydisp.print("Flipped    "); else mydisp.print("Normal ");
-        break;
-
-      case 2:    //ENCODER DOWN
-        screenFlip = !screenFlip;
-        mydisp.setPrintPos(0, 1);
-        if (screenFlip) mydisp.print("Flipped    "); else mydisp.print("Normal ");
-        break;
-
-      case 4:  // ENCODER BUTTON SHORT PRESS
-        stillSelecting = false;
-        if (screenFlip) EEPROM.write(32, 1); else EEPROM.write(32, 0);
-        break;
-
-      case 8:  // ENCODER BUTTON LONG PRESS
-        returnToMainDisp();
-        break;
-
-      case 16:  // ENCODER BUTTON NULL
-        break;
-    }
-  }
-  while (stillSelecting == true);
-}
-
 void contrastMenu() {
   boolean stillSelecting = true;
   mydisp.clearScreen();
@@ -986,13 +1022,15 @@ void contrastMenu() {
   mydisp.setPrintPos(0, 4);
   mydisp.print("Contrast: ");
   mydisp.print(Contrast);
+  mydisp.setPrintPos(0, 6);
+  mydisp.print("Clck:Save Hold:Cancel");
   do {
     mydisp.setContrast(Contrast);
     switch (read_encoder())
     {
       case 1:  // ENCODER UP
-        if (Contrast >= 63) {
-          Contrast = 63;
+        if (Contrast >= 40) {
+          Contrast = 40;
         }
         else {
           Contrast += 1;
@@ -1003,8 +1041,8 @@ void contrastMenu() {
         break;
 
       case 2:    //ENCODER DOWN
-        if (Contrast <= 0) {
-          Contrast = 0;
+        if (Contrast <= 20) {
+          Contrast = 20;
         }
         else {
           Contrast -= 1;
@@ -1042,6 +1080,8 @@ void PIDKpmenu() {
   mydisp.setPrintPos(0, 3);
   mydisp.print("Rate: ");
   mydisp.print(aggKp);
+  mydisp.setPrintPos(0, 6);
+  mydisp.print("Clck:Save Hold:Cancel");
   int Kp100 = aggKp * 100;
   do {
     switch (read_encoder())
@@ -1104,6 +1144,8 @@ void PIDKimenu() {
   mydisp.setPrintPos(0, 3);
   mydisp.print("Speed: ");
   mydisp.print(aggKi);
+  mydisp.setPrintPos(0, 6);
+  mydisp.print("Clck:Save Hold:Cancel");
   int Ki100 = aggKi * 100;
   do {
     switch (read_encoder())
@@ -1166,6 +1208,8 @@ void PIDKdmenu() {
   mydisp.setPrintPos(0, 3);
   mydisp.print("Rate: ");
   mydisp.print(aggKd);
+  mydisp.setPrintPos(0, 6);
+  mydisp.print("Clck:Save Hold:Cancel");
   int Kd100 = aggKd * 100;
   do {
     switch (read_encoder())
@@ -1215,6 +1259,62 @@ void PIDKdmenu() {
   }
   while (stillSelecting == true);
 }
+
+//void PIDKdOVRmenu(){
+//  boolean stillSelecting = true;
+//  mydisp.clearScreen();
+//  mydisp.setFont(10);
+//  mydisp.setPrintPos(0, 0);
+//  mydisp.print("Accel Dampener");  
+//  mydisp.setPrintPos(0, 1);
+//  mydisp.print("Default = .08");
+//  mydisp.setPrintPos(0, 3);
+//  mydisp.print("Rate: ");
+//  mydisp.print(accelDampKd);
+//  mydisp.setPrintPos(0, 6);
+//  mydisp.print("Clck:Save Hold:Cancel");
+//  int accelDampKd100 = accelDampKd * 100;
+//  
+// do{
+//    switch(read_encoder())
+//     {
+//     case 1:  // ENCODER UP
+//        mydisp.setPrintPos(0, 3);
+//        mydisp.print("Rate: ");
+//        accelDampKd = accelDampKd * 100;
+//        if (accelDampKd >= 100) {accelDampKd = 100;}
+//        else {accelDampKd +=1;}
+//        accelDampKd100 = accelDampKd * 100;
+//        accelDampKd /= 100;
+//        mydisp.print(accelDampKd);mydisp.print("  ");
+//      break;
+//
+//      case 2:    //ENCODER DOWN
+//        mydisp.setPrintPos(0, 3);
+//        mydisp.print("Rate: ");
+//        accelDampKd = accelDampKd * 100;
+//        if (accelDampKd <= 0) {accelDampKd = 0;}
+//        else {accelDampKd -=1;}
+//        accelDampKd100 = accelDampKd * 100;
+//        accelDampKd /= 100;
+//        mydisp.print(accelDampKd);mydisp.print("  ");
+//       break;
+//
+//      case 4:  // ENCODER BUTTON SHORT PRESS
+//        stillSelecting = false;
+//        writeWord(22,accelDampKd100);
+//      break;
+//
+//      case 8:  // ENCODER BUTTON LONG PRESS
+//        returnToMainDisp();
+//      break;
+//
+//      case 16:  // ENCODER BUTTON NULL
+//      break;
+//    }
+//  }
+//   while (stillSelecting == true);
+//}
 
 
 void returnToMainDisp()
