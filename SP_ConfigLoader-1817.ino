@@ -85,7 +85,10 @@ void setup()
   mydisp.setPrintPos(0, 1);
 
   //  ***CHECKING FOR FIRST BOOT SETTINGS***
+<<<<<<< HEAD:SP_ConfigLoader-1817.ino
   //18.16 using reset code 1
+=======
+>>>>>>> 907154a38a319a46410ce2899491e8fdb014634e:SP_ConfigLoader-v2.ino
   if (EEPROM.read(200) == 1 ) {}
   else {
     mydisp.setFont(30);
