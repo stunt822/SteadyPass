@@ -47,7 +47,7 @@ goto :flash
 
 
 :flash
-%~dp0files\avrdude -v -C %~dp0files\avrdude.conf -patmega32u4 -cavr109 -P%port% -b57600 -D -V -Uflash:w:"%~dp0files\SteadyPass1819.ino.hex":i
+"%~dp0files\avrdude" -v -C "%~dp0files\avrdude.conf" -patmega32u4 -cavr109 -P%port% -b57600 -D -V -Uflash:w:"%~dp0files\SteadyPass1819.ino.hex":i
 echo off
 echo "                                      __  o                           "
 echo "                                     /  |/                            "
