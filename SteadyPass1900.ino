@@ -30,6 +30,7 @@
   ---|  18.17 - ''''''''' - Commenting out Accel Control and Target Offset, Changed PID routine to P_ON_M
   ---|  18.18 - ''''''''' - Used for testing In Motion Display 
   ---|  18.17 - ''''''''' - Commenting out Accel Control and Target Offset, Changed PID routine to P_ON_M 
+  
 */
 
 //******LIBRARYS******
@@ -44,7 +45,7 @@
 #include <DallasTemperature.h>
 //---------------------
 
-double CurrentVersion = 18.19;
+double CurrentVersion = 19.00;
 
 //*************INITIALIZING DEFINITIONS*************
 boolean firstLoopOnStart = true;
@@ -179,7 +180,7 @@ void setup()
   delay(3000);
   mydisp.clearScreen();
   delay(500);
-  if (!EEPROM.read(200) == 1)
+  if (EEPROM.read(200) != 1)
   {
     mydisp.setFont(30);
     mydisp.setPrintPos(0, 2);
