@@ -741,7 +741,6 @@ void Menu() {
     "Min Throttle",
     "Max Throttle",
     "Test Servo",
-    "Servo Mode",
     "Engine Cylinders",
     "Time Zone Offset",
     "Startup Target Speed",
