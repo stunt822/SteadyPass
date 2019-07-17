@@ -49,7 +49,7 @@
 #include <DallasTemperature.h>
 //---------------------
 
-double CurrentVersion = 19.03;
+double CurrentVersion = 19.04;
 
 //*************INITIALIZING DEFINITIONS*************
 boolean firstLoopOnStart = true;
@@ -111,6 +111,8 @@ int TargetSpeedInt, Target100 = 500;
 int speed100, pos100;
 int gpsDegree;//,gpsHDOP,gpsSats,gpsLat,gpsLng,gpsAlt;
 int gpsSignalCounter = 0;
+double KpInput , KiInput , KdInput;
+double gap = (Setpoint - Input);
 char gpsCourse[9];
 boolean mph = true;
 unsigned long delayCheck = 0;
@@ -419,18 +421,8 @@ static void smartDelay(unsigned long ms)
     {
       gps.encode(Serial1.read());
     }
-    gpsSignalCounter =+ 1;
-    if (gpsSignalCounter > 50){
-      //show Aquiring signal on display
-      gpsSignalFlag = true;
-    }
   }
   while ( (!gps.speed.isUpdated())  );
-  gpsSignalCounter = 0;
-  if (gpsSignalFlag){
-    gpsSignalFlag = false;
-    //clearscreen needed to clear signal lost???
-  }
 }
 //End Function
 
@@ -499,8 +491,7 @@ void PIDCalculations()
 {
   //Serial.print(Setpoint);
   //PID INPUTS//
-  double KpInput , KiInput , KdInput;
-  double gap = (Setpoint - Input);
+  
   if (speedMode) {
     if (gap >= 500){
       if (!calcPonMMode){
@@ -508,25 +499,18 @@ void PIDCalculations()
         myPID.SetTunings(KiInput, KpInput, KdInput, P_ON_M);
       }
     }
-    if (gap <=0){
+    else if (gap <=0){
       if (calcPonMMode){
         calcPonMMode = false;
-        myPID.SetTunings(KiInput, KpInput, KdInput, P_ON_E);
+        myPID.SetTunings(PonEKp, PonEKi, PonEKd, P_ON_E);
       }
+    }
+    else{ 
+      //do nothing if gap <500  but >0
     }
     
     Input = speed100;
     Setpoint = Target100;
-    if (!calcPonMMode){
-      KpInput = PonEKp;
-      KiInput = PonEKi;
-      KdInput = PonEKd;
-    }
-    else{
-      KpInput = PonMKp;
-      KiInput = PonMKi;
-      KdInput = PonMKd;
-    }
   }
   else {
     Input = readRpm();
@@ -535,7 +519,6 @@ void PIDCalculations()
     KpInput = PonEKi;
     KdInput = 0.00;
   }
-  myPID.SetTunings(KiInput, KpInput, KdInput);
   myPID.Compute();
   pos = Output;
 }
