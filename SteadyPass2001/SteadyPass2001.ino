@@ -56,11 +56,14 @@ boolean firstLoopOnStart = true;
 boolean firstMainDispLoop = true;
 boolean stillSelecting = true;
 //boolean boatInMotion = false;
-boolean calcPonMMode = true;
+boolean calcPonMMode = false;
 boolean gpsSignalFlag = false;
 double Setpoint, Input, Output, gap;
 double PonMKp = 0.25, PonMKi = 0.50 , PonMKd = 0.05, PonEKp = 0.25, PonEKi = 0.25, PonEKd = 0.05;
-PID myPID(&Input, &Output, &Setpoint, PonMKp, PonMKi, PonMKd, P_ON_M, REVERSE);
+double KpInput = PonMKp;
+double KiInput = PonMKi;
+double KdInput = PonMKd;
+PID myPID(&Input,&Output,&Setpoint,KpInput,KiInput,KdInput,P_ON_M,REVERSE);
 #define MOVECURSOR 1  // constants for indicating whether cursor should be redrawn
 #define MOVELIST 2  // constants for indicating whether cursor should be redrawn
 byte totalRows = 6;  // total rows of LCD
@@ -111,7 +114,6 @@ int TargetSpeedInt, Target100 = 500;
 int speed100, pos100;
 int gpsDegree;//,gpsHDOP,gpsSats,gpsLat,gpsLng,gpsAlt;
 int gpsSignalCounter = 0;
-double KpInput , KiInput , KdInput;
 char gpsCourse[9];
 boolean mph = true;
 unsigned long delayCheck = 0;
@@ -126,7 +128,7 @@ volatile unsigned long duration = 0; // accumulates pulse width
 volatile unsigned long pulsecount = 0; //incremented by interrupt
 volatile unsigned long previousMicros = 0;
 int targetRPM = 3000;
-
+int CalcMode = 0;
 //*************SERVO INITIALIZATION*************
 Servo myservo;
 int minServo = 950;
@@ -506,26 +508,39 @@ void PIDCalculations()
     if (gap >= 500){
       if (!calcPonMMode){
         calcPonMMode = true;
-        myPID.SetTunings(PonMKp, PonMKi, PonMKd, P_ON_M);
+        KpInput = PonMKp;
+        KiInput = PonMKi;
+        KdInput = PonMKd;
+        CalcMode = P_ON_M;
       }
     }
     if(gap <=0){
       if (calcPonMMode){
         calcPonMMode = false;
-        myPID.SetTunings(PonEKp, PonEKi, PonEKd, P_ON_E);
+        KpInput = PonEKp;
+        KiInput = PonEKi;
+        KdInput = PonEKd;
+        CalcMode = P_ON_E;
       }
     }
+    myPID.SetTunings(KpInput,KiInput,KdInput,CalcMode);
     Input = speed100;
     Setpoint = Target100;
   }
   else {
     Input = readRpm();
     Setpoint = targetRPM;
-    PonEKd = 0.00;
-    myPID.SetTunings(PonEKp, PonEKi, PonEKd, P_ON_E);
+    KpInput = PonEKp;
+    KiInput = PonEKi;
+    KdInput = 0;
+    CalcMode = P_ON_E;
   }
+  
+
   myPID.Compute();
   pos = Output;
+  Serial.print(Output); Serial.print("|||");
+  Serial.print(myPID.GetMode()); Serial.print("|||---");
 }
 //End Function
 
