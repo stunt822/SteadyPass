@@ -59,7 +59,7 @@ boolean stillSelecting = true;
 boolean calcPonMMode = false;
 boolean gpsSignalFlag = false;
 double Setpoint, Input, Output, gap;
-double PonMKp = 0.25, PonMKi = 0.50 , PonMKd = 0.05, PonEKp = 0.25, PonEKi = 0.25, PonEKd = 0.05;
+double PonMKp = 0.50, PonMKi = 0.25 , PonMKd = 0.05, PonEKp = 0.30, PonEKi = 0.25, PonEKd = 0.05;
 double KpInput = PonMKp;
 double KiInput = PonMKi;
 double KdInput = PonMKd;
@@ -214,12 +214,12 @@ void setup()
     mydisp.print("UPDATING TUNING!");
     delay(5000);
     EEPROM.write(12, 0); //KP whole
-    EEPROM.write(13, 25); //KP dec
+    EEPROM.write(13, 50); //KP dec
     EEPROM.write(14, 0); //KI whole
-    EEPROM.write(15, 50); //KI dec
+    EEPROM.write(15, 25); //KI dec
     EEPROM.write(16, 0); //KD whole
     EEPROM.write(17, 5); //KD dec
-    EEPROM.write(201, 1);//tuning Update Bit
+    EEPROM.write(201, 2);//tuning Update Bit
     mydisp.clearScreen();
     delay(500);
   }
@@ -1473,7 +1473,7 @@ void PIDKpmenu() {
   mydisp.setPrintPos(0, 0);
   mydisp.print("Proportional Gain");
   mydisp.setPrintPos(0, 1);
-  mydisp.print("Default rate = .25");
+  mydisp.print("Default rate = .50");
   mydisp.setPrintPos(0, 3);
   mydisp.print("Rate: ");
   mydisp.print(PonMKp);
@@ -1537,7 +1537,7 @@ void PIDKimenu() {
   mydisp.setPrintPos(0, 0);
   mydisp.print("Integral Gain");
   mydisp.setPrintPos(0, 1);
-  mydisp.print("default = .50");
+  mydisp.print("default = .25");
   mydisp.setPrintPos(0, 3);
   mydisp.print("Rate: ");
   mydisp.print(PonMKi);
