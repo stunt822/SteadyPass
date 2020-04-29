@@ -204,7 +204,7 @@ void setup()
   if (EEPROM.read(200) != 2)
   {
     mydisp.setFont(30);
-    mydisp.setPrintPos(0, 2);
+    mydisp.setPrintPos(0, 3);
     mydisp.print(" INITIALIZE MEM  ");
     delay(2000);
     EEPROM.write(11, 6);      //cylCoeff
@@ -217,14 +217,14 @@ void setup()
     EEPROM.write(31, 1);      //Startup Target
     //EEPROM.write(32, 0);
     EEPROM.write(33, 30);     //Contrast
-    EEPROM.write(200, 2);     //Preferences Reset Bit
+    EEPROM.write(200, 3);     //Preferences Reset Bit
     mydisp.clearScreen();
     delay(500);
   }
-  if (EEPROM.read(201) != 2)
+  if (EEPROM.read(201) != 3)
   {
     mydisp.setFont(30);
-    mydisp.setPrintPos(0, 2);
+    mydisp.setPrintPos(0, 3);
     mydisp.print("UPDATING TUNING");
     delay(5000);
     EEPROM.write(12, 0); //KP whole
@@ -239,7 +239,7 @@ void setup()
     EEPROM.write(53, 25); //KI dec
     EEPROM.write(54, 0); //KD whole
     EEPROM.write(55, 5); //KD dec
-    EEPROM.write(201, 2);//tuning Update Bit
+    EEPROM.write(201, 3);//tuning Update Bit
     mydisp.clearScreen();
     delay(500);
   }
@@ -285,6 +285,13 @@ void setup()
   celsius = EEPROM.read(29);
   Target100 = readWord(30);
   Contrast = EEPROM.read(33);
+
+  EKp100 = PonEKp * 100;
+  EKi100 = PonEKi * 100;
+  EKd100 = PonEKd * 100;
+  Kp100 = PonMKp * 100;
+  Ki100 = PonMKi * 100;
+  Kd100 = PonMKd * 100;
   //----------------LOADED VALUES COMPLETE-------------------
 
   myPID.SetOutputLimits(minServo, maxServo);
@@ -308,8 +315,8 @@ void loop ()
 //    digitalWrite(13, HIGH);
 //    led = true;
 //  }
-  //smartDelay(50);
-  delay(200);
+  smartDelay(50);
+  //delay(200);
   if (firstLoopOnStart) {
     mydisp.clearScreen();
     delay(100);
@@ -695,11 +702,11 @@ int read_encoder() {
     else if (inMenuPress > 0) {
       inMenuPress = 0;
       mydisp.clearScreen();
-      mydisp.setFont(20);
-      mydisp.setPrintPos(0, 0);
-      mydisp.print("ENTER");
-      delay(500);
-      mydisp.clearScreen();
+      //mydisp.setFont(20);
+      //mydisp.setPrintPos(0, 0);
+      //mydisp.print("ENTER");
+      //delay(500);
+      //mydisp.clearScreen();
       return btnPress;
     }
     else {
@@ -720,8 +727,24 @@ int read_encoder() {
 }
 
 void Menu(){
-  menuItem = 1;
-  mydisp.setFont(10); 
+  //Reset selectors to false
+	selectPonEKp = false;
+	selectPonEKi = false;
+	selectPonEKd = false;
+	selectPonMKp = false;
+	selectPonMKi = false;
+	selectPonMKd = false;
+	selectMaxServo = false;
+	selectMinServo = false;
+	selectStartSpeed = false;
+	selectContrastMenu = false;
+	selectCylinderMenu = false;
+	selectClockMenu = false;
+	selectTempMenu = false;
+	selectMeasurementMenu = false;
+	selectTestServo = false;
+	menuItem = 1;
+	mydisp.setFont(10); 
   do {
     stillSelecting = true;
     mydisp.setPrintPos(0, 0); 
@@ -769,36 +792,37 @@ void Menu(){
   
 void tuningMenu(){
   menuItem = 1;
+  
 do{
   mydisp.setFont(10); 
   mydisp.setPrintPos(0, 0); 
   if (menuItem == 1) mydisp.print(">>");
-  mydisp.print("TargetKP: "); mydisp.print(PonEKp); mydisp.print("  ");
+  mydisp.print("TargetKP:"); if (selectPonEKp) mydisp.print("("); mydisp.print(PonEKp); if (selectPonEKp) mydisp.print(")"); mydisp.print("  ");
   delay(25); 
   
   mydisp.setPrintPos(0, 1);
   if (menuItem == 2) mydisp.print(">>");
-  mydisp.print("TargetKI: "); mydisp.print(PonEKi); mydisp.print("  ");
+  mydisp.print("TargetKI:"); if (selectPonEKi) mydisp.print("("); mydisp.print(PonEKi);  if (selectPonEKi) mydisp.print(")"); mydisp.print("  ");
   delay(25);
 
   mydisp.setPrintPos(0, 2);
    if (menuItem == 3) mydisp.print(">>");
-   mydisp.print("TargetKD: "); mydisp.print(PonEKd); mydisp.print("  ");
+   mydisp.print("TargetKD:"); if (selectPonEKd) mydisp.print("("); mydisp.print(PonEKd);  if (selectPonEKd) mydisp.print(")"); mydisp.print("  ");
     delay(25);
  
    mydisp.setPrintPos(0, 4);
    if (menuItem == 4) mydisp.print(">>");
-   mydisp.print("AccelKP: "); mydisp.print(PonMKp); mydisp.print("  ");
+   mydisp.print("AccelKP:"); if (selectPonMKp) mydisp.print("("); mydisp.print(PonMKp); if (selectPonMKp) mydisp.print(")"); mydisp.print("  ");
    delay(25);  
 
   mydisp.setPrintPos(0, 5);
   if (menuItem == 5) mydisp.print(">>");
-  mydisp.print("AccelKI "); mydisp.print(PonMKi); mydisp.print("  ");
+  mydisp.print("AccelKI:"); if (selectPonMKi) mydisp.print("("); mydisp.print(PonMKi); if (selectPonMKi) mydisp.print(")"); mydisp.print("  ");
   delay(25); 
 
   mydisp.setPrintPos(0, 6); 
   if (menuItem == 6) mydisp.print(">>");
-  mydisp.print("AccelKD: "); mydisp.print(PonMKd); mydisp.print("  ");
+  mydisp.print("AccelKD:"); if (selectPonMKd) mydisp.print("("); mydisp.print(PonMKd); if (selectPonMKd) mydisp.print(")");mydisp.print("  ");
   delay(25);
 
 
@@ -988,17 +1012,19 @@ void servoMenu(){
     mydisp.setFont(10);
     mydisp.setPrintPos(0, 0); 
     if (menuItem == 1) mydisp.print(">>");
-    mydisp.print("Min Servo: "); mydisp.print(minServo); mydisp.print("  "); 
+    mydisp.print("Min Servo:"); if (selectMinServo) mydisp.print("("); mydisp.print(minServo); if (selectMinServo) mydisp.print(")"); mydisp.print("  "); 
     
     mydisp.setPrintPos(0, 1);
     if (menuItem == 2) mydisp.print(">>");
-    mydisp.print("Max Servo: "); mydisp.print(maxServo); mydisp.print("  ");
+    mydisp.print("Max Servo:"); if (selectMaxServo) mydisp.print("("); mydisp.print(maxServo); if (selectMaxServo) mydisp.print(")"); mydisp.print("  ");
   
     mydisp.setPrintPos(0, 2);
      if (menuItem == 3) mydisp.print(">>");
-     mydisp.print("Test Servo: ");
-     if (selectTestServo)mydisp.print("Testing  "); else mydisp.print("Off       ");
-     
+     mydisp.print("Test:");
+     if (selectTestServo) mydisp.print("(");
+     if (selectTestServo)mydisp.print("Testing"); else mydisp.print("Off");
+     if (selectTestServo) mydisp.print(")");
+     mydisp.print("    ");
      mydisp.setPrintPos(0, 5);
      mydisp.print("Servo Position: "); mydisp.print(pos); mydisp.print("  ");
      
@@ -1097,34 +1123,40 @@ void preferencesMenu(){
       mydisp.setFont(10);
       mydisp.setPrintPos(0, 0); 
       if (menuItem == 1) mydisp.print(">>");
-      mydisp.print("Start Spd:"); printTargetSpeed(); mydisp.print("  ");
+      mydisp.print("StartSpd:"); if (selectStartSpeed) mydisp.print("("); printTargetSpeed(); if (selectStartSpeed) mydisp.print(")"); mydisp.print("  ");
         delay(20);
         
       mydisp.setPrintPos(0, 1);
       if (menuItem == 2) mydisp.print(">>");
-      mydisp.print("Engine Cyl:"); mydisp.print(cylCoeff); mydisp.print("  ");
+      mydisp.print("Engine Cyl:"); if (selectCylinderMenu) mydisp.print("("); mydisp.print(cylCoeff); if (selectCylinderMenu) mydisp.print(")"); mydisp.print("  ");
       delay(20);
       
       mydisp.setPrintPos(0, 2);
        if (menuItem == 3) mydisp.print(">>");
-       mydisp.print("Clock Offset:");mydisp.print(hourOffset - 12); mydisp.print("   "); // mydisp.print(hour); mydisp.print("  ");
+       mydisp.print("Clock Offset:");if (selectClockMenu) mydisp.print("("); mydisp.print(hourOffset - 12); if (selectClockMenu) mydisp.print(")"); mydisp.print("   "); // mydisp.print(hour); mydisp.print("  ");
         delay(20);
         
      mydisp.setPrintPos(0, 3);
        if (menuItem == 4) mydisp.print(">>");
        mydisp.print("Unit Speed:"); 
-       if (mph) mydisp.print("MPH "); else mydisp.print("KPH "); mydisp.print("  ");
-        delay(20);
+       if (selectMeasurementMenu) mydisp.print("("); 
+       if (mph) mydisp.print("MPH"); else mydisp.print("KPH");
+       if (selectMeasurementMenu) mydisp.print(")");  
+        mydisp.print("  ");
+       delay(20);
          
      mydisp.setPrintPos(0, 4);
        if (menuItem == 5) mydisp.print(">>");
        mydisp.print("Unit Temp:");
-       if (celsius) mydisp.print("Celsius     "); else mydisp.print("Farenheit "); mydisp.print("  ");
-        delay(20);
+       if (selectTempMenu) mydisp.print("("); 
+       if (celsius) mydisp.print("C"); else mydisp.print("F"); 
+       if (selectTempMenu) mydisp.print(")"); 
+       mydisp.print("  ");
+       delay(20);
         
     mydisp.setPrintPos(0, 5);
        if (menuItem == 6) mydisp.print(">>");
-       mydisp.print("Contrast:"); mydisp.print(Contrast); mydisp.print("  ");
+       mydisp.print("Contrast:"); if (selectContrastMenu) mydisp.print("(");  mydisp.print(Contrast); if (selectContrastMenu) mydisp.print(")"); mydisp.print("  ");
        delay(20);
        
 
@@ -1343,9 +1375,9 @@ void printTargetSpeed()
   targetSpeedWhole = TargetSpeedInt / 10;
   targetSpeedDecimal = TargetSpeedInt % 10;
   int c = targetSpeedDecimal + targetSpeedWhole;
-  if (c < 0) mydisp.print (" -");
-  else if (targetSpeedWhole < 10) mydisp.print ("  ");
-  else mydisp.print (" ");
+  if (c < 0) mydisp.print ("-");
+  else if (targetSpeedWhole < 10) mydisp.print (" ");
+  else mydisp.print ("");
   if (targetSpeedWhole < 0) targetSpeedWhole = -targetSpeedWhole;
   mydisp.print (targetSpeedWhole);
   mydisp.print (".");
