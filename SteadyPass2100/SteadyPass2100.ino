@@ -217,7 +217,7 @@ void setup()
     EEPROM.write(31, 1);      //Startup Target
     //EEPROM.write(32, 0);
     EEPROM.write(33, 30);     //Contrast
-    EEPROM.write(200, 3);     //Preferences Reset Bit
+    EEPROM.write(200, 2);     //Preferences Reset Bit
     mydisp.clearScreen();
     delay(500);
   }
