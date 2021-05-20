@@ -95,11 +95,11 @@ byte mode = 0;                                   //Calculations mode 0=off 1=RPM
 
 //*****PIN CONFIGURATION******
 //0 and 1 = GPS
-const byte PinCLK = 2;             //encoder second pin
-const byte PinDT = 3;              // Used for reading DT signal of encoder
+const byte PinCLK = 3;             //encoder second pin
+const byte PinDT = 2;              // Used for reading DT signal of encoder
 const byte PinSW = 4;              //encoder button
 const byte servoPin = 5;           //servo PWM connected here
-const byte rpmPin = 7;             //Engine RPM input connected here
+const byte rpmPin = 44;            //Engine RPM input connected here
 //8 and 9 - LCD, defined above
 //open - 10 - LCD SS?
 const byte tempWtrPin = 11;        //temperature water
