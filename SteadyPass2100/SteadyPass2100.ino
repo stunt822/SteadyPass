@@ -797,32 +797,32 @@ do{
   mydisp.setFont(10); 
   mydisp.setPrintPos(0, 0); 
   if (menuItem == 1) mydisp.print(">>");
-  mydisp.print("TargetKP:"); if (selectPonEKp) mydisp.print("("); mydisp.print(PonEKp); if (selectPonEKp) mydisp.print(")"); mydisp.print("  ");
+  mydisp.print("Target P:"); if (selectPonEKp) mydisp.print("("); mydisp.print(PonEKp); if (selectPonEKp) mydisp.print(")"); mydisp.print("  ");
   delay(25); 
   
   mydisp.setPrintPos(0, 1);
   if (menuItem == 2) mydisp.print(">>");
-  mydisp.print("TargetKI:"); if (selectPonEKi) mydisp.print("("); mydisp.print(PonEKi);  if (selectPonEKi) mydisp.print(")"); mydisp.print("  ");
+  mydisp.print("Target I:"); if (selectPonEKi) mydisp.print("("); mydisp.print(PonEKi);  if (selectPonEKi) mydisp.print(")"); mydisp.print("  ");
   delay(25);
 
   mydisp.setPrintPos(0, 2);
    if (menuItem == 3) mydisp.print(">>");
-   mydisp.print("TargetKD:"); if (selectPonEKd) mydisp.print("("); mydisp.print(PonEKd);  if (selectPonEKd) mydisp.print(")"); mydisp.print("  ");
+   mydisp.print("Target D:"); if (selectPonEKd) mydisp.print("("); mydisp.print(PonEKd);  if (selectPonEKd) mydisp.print(")"); mydisp.print("  ");
     delay(25);
  
    mydisp.setPrintPos(0, 4);
    if (menuItem == 4) mydisp.print(">>");
-   mydisp.print("AccelKP:"); if (selectPonMKp) mydisp.print("("); mydisp.print(PonMKp); if (selectPonMKp) mydisp.print(")"); mydisp.print("  ");
+   mydisp.print("Accel P:"); if (selectPonMKp) mydisp.print("("); mydisp.print(PonMKp); if (selectPonMKp) mydisp.print(")"); mydisp.print("  ");
    delay(25);  
 
   mydisp.setPrintPos(0, 5);
   if (menuItem == 5) mydisp.print(">>");
-  mydisp.print("AccelKI:"); if (selectPonMKi) mydisp.print("("); mydisp.print(PonMKi); if (selectPonMKi) mydisp.print(")"); mydisp.print("  ");
+  mydisp.print("Accel I:"); if (selectPonMKi) mydisp.print("("); mydisp.print(PonMKi); if (selectPonMKi) mydisp.print(")"); mydisp.print("  ");
   delay(25); 
 
   mydisp.setPrintPos(0, 6); 
   if (menuItem == 6) mydisp.print(">>");
-  mydisp.print("AccelKD:"); if (selectPonMKd) mydisp.print("("); mydisp.print(PonMKd); if (selectPonMKd) mydisp.print(")");mydisp.print("  ");
+  mydisp.print("Accel D:"); if (selectPonMKd) mydisp.print("("); mydisp.print(PonMKd); if (selectPonMKd) mydisp.print(")");mydisp.print("  ");
   delay(25);
 
 
