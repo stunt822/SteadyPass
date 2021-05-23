@@ -389,6 +389,7 @@ void loop ()
 
   if (TurnDetected) {
     if (mode == 1) Target100 += 10 * encoder;
+    if (Target100 < 0) Target100 = 0;
     encoder = 0;
     TurnDetected = false;
   }
