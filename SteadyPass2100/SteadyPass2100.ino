@@ -388,7 +388,7 @@ void loop ()
   if (mainDisplay) MainDisplay();  //DISPLAY MAIN OUTPUT
 
   if (TurnDetected) {
-    if (mode == 1) Target100 += 10 * encoder;
+    if (mode == 1) Target100 += -10 * encoder;
     encoder = 0;
     TurnDetected = false;
   }
