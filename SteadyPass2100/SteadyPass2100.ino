@@ -163,6 +163,9 @@ boolean mainDisplay = true;
 volatile long encoder = 0;
 int hours, minutes, seconds, hourOffset = 12;
 boolean speedMode = false;
+unsigned long startMillis = 0;
+unsigned long currentMillis;
+const unsigned long menuTimeout = 10000;
 
 //*************FUNCTION INITIALIZATION*************
 int   readRpm();                              //read RPM and reset counters
@@ -746,6 +749,7 @@ void Menu(){
 	selectTestServo = false;
 	menuItem = 1;
 	mydisp.setFont(10); 
+	startMillis = millis();
   do {
     stillSelecting = true;
     mydisp.setPrintPos(0, 0); 
@@ -766,10 +770,12 @@ void Menu(){
         switch (read_encoder())
       {
         case 1:  // ENCODER UP
+          startMillis = millis();
            menuItem--;
            if(menuItem < 1) menuItem = 1;
           break;
         case 2:    //ENCODER DOWN
+          startMillis = millis();
            menuItem++;
            if(menuItem > 3) menuItem = 3;
           break;
@@ -783,7 +789,11 @@ void Menu(){
           returnToMainDisp();
           break;
         case 16:  // ENCODER BUTTON NULL
-          
+          currentMillis = millis();
+          if ((currentMillis - startMillis) >= menuTimeout) {
+            mydisp.clearScreen();
+            returnToMainDisp();
+          }
           break;
       }
   }
@@ -793,7 +803,8 @@ void Menu(){
   
 void tuningMenu(){
   menuItem = 1;
-  
+  startMillis = millis();
+
 do{
   mydisp.setFont(10); 
   mydisp.setPrintPos(0, 0); 
@@ -827,10 +838,11 @@ do{
   delay(25);
 
 
-  switch (read_encoder())
+    switch (read_encoder())
       {
         stillSelecting = true;  
         case 1:  // ENCODER UP
+          startMillis = millis();
 
           if (selectPonEKp){
             PonEKp = PonEKp * 100;
@@ -911,6 +923,7 @@ do{
 
           
         case 2:    //ENCODER DOWN
+          startMillis = millis();
         if (selectPonEKp){
           PonEKp = PonEKp * 100;
           if (PonEKp <= 0) {
@@ -989,6 +1002,7 @@ do{
         }
           break;
         case 4:  // ENCODER BUTTON SHORT PRESS
+          startMillis = millis();
           if (menuItem == 1) selectPonEKp = !selectPonEKp;
           if (menuItem == 2) selectPonEKi = !selectPonEKi;
           if (menuItem == 3) selectPonEKd = !selectPonEKd;
@@ -1000,7 +1014,11 @@ do{
           Menu();
           break;
         case 16:  // ENCODER BUTTON NULL
-          
+          currentMillis = millis();
+          if ((currentMillis - startMillis) >= menuTimeout) {
+            mydisp.clearScreen();
+            returnToMainDisp();
+          }
           break;
       }
   }
@@ -1113,7 +1131,7 @@ void servoMenu(){
 
 void preferencesMenu(){
    menuItem = 1;
-   
+   startMillis = millis();
    gps.encode(Serial1.read());
        hours = gps.time.hour() + hourOffset - 12;
        int hour = hours;
@@ -1165,6 +1183,7 @@ void preferencesMenu(){
       {
         stillSelecting = true;  
         case 1:  // ENCODER UP
+          startMillis = millis();
           if(selectStartSpeed){
             if (Target100 >= 5000) {
                Target100 = 5000;
@@ -1222,6 +1241,7 @@ void preferencesMenu(){
           break;
           
         case 2:    //ENCODER DOWN
+          startMillis = millis();
           if(selectStartSpeed){
             if (Target100 <= 500) {
               Target100 = 500;
@@ -1288,6 +1308,11 @@ void preferencesMenu(){
           Menu();
           break;
         case 16:  // ENCODER BUTTON NULL
+          currentMillis = millis();
+          if ((currentMillis - startMillis) >= menuTimeout) {
+            mydisp.clearScreen();
+            returnToMainDisp();
+          }
           break;
       }
   } 
