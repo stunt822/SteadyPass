@@ -732,24 +732,24 @@ int read_encoder() {
 
 void Menu(){
   //Reset selectors to false
-	selectPonEKp = false;
-	selectPonEKi = false;
-	selectPonEKd = false;
-	selectPonMKp = false;
-	selectPonMKi = false;
-	selectPonMKd = false;
-	selectMaxServo = false;
-	selectMinServo = false;
-	selectStartSpeed = false;
-	selectContrastMenu = false;
-	selectCylinderMenu = false;
-	selectClockMenu = false;
-	selectTempMenu = false;
-	selectMeasurementMenu = false;
-	selectTestServo = false;
-	menuItem = 1;
-	mydisp.setFont(10); 
-	startMillis = millis();
+  selectPonEKp = false;
+  selectPonEKi = false;
+  selectPonEKd = false;
+  selectPonMKp = false;
+  selectPonMKi = false;
+  selectPonMKd = false;
+  selectMaxServo = false;
+  selectMinServo = false;
+  selectStartSpeed = false;
+  selectContrastMenu = false;
+  selectCylinderMenu = false;
+  selectClockMenu = false;
+  selectTempMenu = false;
+  selectMeasurementMenu = false;
+  selectTestServo = false;
+  menuItem = 1;
+  mydisp.setFont(10); 
+  startMillis = millis();
   do {
     stillSelecting = true;
     mydisp.setPrintPos(0, 0); 
@@ -844,73 +844,74 @@ do{
         case 1:  // ENCODER UP
           startMillis = millis();
 
-          if (selectPonEKp){
+
+          if (selectPonEKp) {
             PonEKp = PonEKp * 100;
-            if (PonEKp >= 100) {
-              PonEKp = 100;
+            if (PonEKp <= 0) {
+              PonEKp = 0;
             }
             else {
-              PonEKp += 1;
+              PonEKp -= 1;
             }
             EKp100 = PonEKp;
             PonEKp /= 100;
           }
-          
-          else if (selectPonEKi){
+
+          else if (selectPonEKi) {
             PonEKi = PonEKi * 100;
-            if (PonEKi >= 100) {
-              PonEKi = 100;
+            if (PonEKi <= 0) {
+              PonEKi = 0;
             }
             else {
-              PonEKi += 1;
+              PonEKi -= 1;
             }
             EKi100 = PonEKi;
             PonEKi /= 100;
           }
-          
-          else if (selectPonEKd){
+
+          else if (selectPonEKd) {
             PonEKd = PonEKd * 100;
-            if (PonEKd >= 100) {
-              PonEKd = 100;
+            if (PonEKd <= 0) {
+              PonEKd = 0;
             }
             else {
-              PonEKd += 1;
+              PonEKd -= 1;
             }
             EKd100 = PonEKd;
             PonEKd /= 100;
           }
-          
-          else if (selectPonMKp){
+
+          else if (selectPonMKp) {
             PonMKp = PonMKp * 100;
-            if (PonMKp >= 100) {
-              PonMKp = 100;
+            if (PonMKp <= 0) {
+              PonMKp = 0;
             }
             else {
-              PonMKp += 1;
+              PonMKp -= 1;
             }
             Kp100 = PonMKp;
             PonMKp /= 100;
           }
-          
-          else if (selectPonMKi){
+
+          else if (selectPonMKi) {
             PonMKi = PonMKi * 100;
-            if (PonMKi >= 100) {
-              PonMKi = 100;
+            if (PonMKi <= 0) {
+              PonMKi = 0;
             }
             else {
-              PonMKi += 1;
+              PonMKi -= 1;
             }
             Ki100 = PonMKi;
             PonMKi /= 100;
           }
-          
-          else if (selectPonMKd){
+
+          else if (selectPonMKd) {
             PonMKd = PonMKd * 100;
-            if (PonMKd >= 100) {
-              PonMKd = 100;
+            if (PonMKd <= 0) {
+              PonMKd = 0;
             }
             else {
-              PonMKd += 1;
+              PonMKd -= 1;
             }
             Kd100 = PonMKd;
             PonMKd /= 100;
@@ -924,77 +925,77 @@ do{
           
         case 2:    //ENCODER DOWN
           startMillis = millis();
-        if (selectPonEKp){
-          PonEKp = PonEKp * 100;
-          if (PonEKp <= 0) {
-            PonEKp = 0;
+          if (selectPonEKp) {
+            PonEKp = PonEKp * 100;
+            if (PonEKp >= 100) {
+              PonEKp = 100;
+            }
+            else {
+              PonEKp += 1;
+            }
+            EKp100 = PonEKp;
+            PonEKp /= 100;
           }
-          else {
-            PonEKp -= 1;
-          }
-          EKp100 = PonEKp;
-          PonEKp /= 100;
-        }
-        
-        else if (selectPonEKi){
-          PonEKi = PonEKi * 100;
-          if (PonEKi <= 0) {
-            PonEKi = 0;
-          }
-          else {
-            PonEKi -= 1;
-          }
-          EKi100 = PonEKi;
-          PonEKi /= 100;
-        }
-        
-        else if (selectPonEKd){
-          PonEKd = PonEKd * 100;
-          if (PonEKd <= 0) {
-            PonEKd = 0;
-          }
-          else {
-            PonEKd -= 1;
-          }
-          EKd100 = PonEKd;
-          PonEKd /= 100;
-        }
-        
-        else if (selectPonMKp){
-          PonMKp = PonMKp * 100;
-          if (PonMKp <= 0) {
-            PonMKp = 0;
-          }
-          else {
-            PonMKp -= 1;
-          }
-          Kp100 = PonMKp;
-          PonMKp /= 100;
-        }
 
-        else if (selectPonMKi){
-          PonMKi = PonMKi * 100;
-          if (PonMKi <= 0) {
-            PonMKi = 0;
+          else if (selectPonEKi) {
+            PonEKi = PonEKi * 100;
+            if (PonEKi >= 100) {
+              PonEKi = 100;
+            }
+            else {
+              PonEKi += 1;
+            }
+            EKi100 = PonEKi;
+            PonEKi /= 100;
           }
-          else {
-            PonMKi -= 1;
-          }
-          Ki100 = PonMKi;
-          PonMKi /= 100;
-        }
 
-        else if (selectPonMKd){
-          PonMKd = PonMKd * 100;
-          if (PonMKd <= 0) {
-            PonMKd = 0;
+          else if (selectPonEKd) {
+            PonEKd = PonEKd * 100;
+            if (PonEKd >= 100) {
+              PonEKd = 100;
+            }
+            else {
+              PonEKd += 1;
+            }
+            EKd100 = PonEKd;
+            PonEKd /= 100;
           }
-          else {
-            PonMKd -= 1;
+
+          else if (selectPonMKp) {
+            PonMKp = PonMKp * 100;
+            if (PonMKp >= 100) {
+              PonMKp = 100;
+            }
+            else {
+              PonMKp += 1;
+            }
+            Kp100 = PonMKp;
+            PonMKp /= 100;
           }
-          Kd100 = PonMKd;
-          PonMKd /= 100;
-        }
+
+          else if (selectPonMKi) {
+            PonMKi = PonMKi * 100;
+            if (PonMKi >= 100) {
+              PonMKi = 100;
+            }
+            else {
+              PonMKi += 1;
+            }
+            Ki100 = PonMKi;
+            PonMKi /= 100;
+          }
+
+          else if (selectPonMKd) {
+            PonMKd = PonMKd * 100;
+            if (PonMKd >= 100) {
+              PonMKd = 100;
+            }
+            else {
+              PonMKd += 1;
+            }
+            Kd100 = PonMKd;
+            PonMKd /= 100;
+          }
         
         else{
            menuItem++;
@@ -1054,22 +1055,22 @@ void servoMenu(){
       {
         stillSelecting = true;  
         case 1:  // ENCODER UP
-          if(selectMaxServo){
-            if (maxServo >= 1950) {
-              maxServo = 1950;
+          if (selectMaxServo) {
+            if (maxServo <= minServo) {
+              maxServo = minServo + 10;
             }
             else {
-              maxServo += 10;
+              maxServo -= 10;
             }
             pos = maxServo;
           }
-          
-          else if(selectMinServo){
-            if (minServo >= maxServo) {
-              minServo = maxServo - 10;
+
+          else if (selectMinServo) {
+            if (minServo <= 950) {
+              minServo = 950;
             }
             else {
-              minServo += 10;
+              minServo -= 10;
             }
             pos = minServo;
           }
@@ -1081,26 +1082,26 @@ void servoMenu(){
           break;
           
         case 2:    //ENCODER DOWN
-          if(selectMaxServo){
-            if (maxServo <= minServo) {
-              maxServo = minServo + 10;
+          if (selectMaxServo) {
+            if (maxServo >= 1950) {
+              maxServo = 1950;
             }
             else {
-              maxServo -= 10;
+              maxServo += 10;
             }
             pos = maxServo;
           }
-          
-          else if(selectMinServo){
-            if (minServo <= 950) {
-              minServo = 950;
+
+          else if (selectMinServo) {
+            if (minServo >= maxServo) {
+              minServo = maxServo - 10;
             }
             else {
-              minServo -= 10;
+              minServo += 10;
             }
             pos = minServo;
           }
-          
+
           else{
             menuItem++;
             if(menuItem > 3) menuItem = 3;
@@ -1184,16 +1185,71 @@ void preferencesMenu(){
         stillSelecting = true;  
         case 1:  // ENCODER UP
           startMillis = millis();
-          if(selectStartSpeed){
-            if (Target100 >= 5000) {
-               Target100 = 5000;
-             }
-             else {
-               Target100 += 10;
-             }
+          if (selectStartSpeed) {
+            if (Target100 <= 500) {
+              Target100 = 500;
+            }
+            else {
+              Target100 -= 10;
+            }
           }
+
+          else if (selectCylinderMenu) {
+            if (cylCoeff > 4) {
+              cylCoeff = cylCoeff - 2;
+            }
+            else {
+              cylCoeff = 1;
+            }
+          }
+
+          else if (selectClockMenu) {
+            if (hourOffset > 0) {
+              hourOffset -= 1;
+            }
+            else {
+              hourOffset = 0;
+            }
+            hours = gps.time.hour() + hourOffset - 12;
+            if (hours < 0) hours += 24;
+            if (hours > 24) hours -= 24;
+          }
+
+          else if (selectMeasurementMenu) {
+            mph = !mph;
+          }
+
+          else if (selectTempMenu) {
+            celsius = !celsius;
+          }
+
+          else if (selectContrastMenu) {
+            if (Contrast <= 20) {
+              Contrast = 20;
+            }
+            else {
+              Contrast -= 1;
+            }
+            mydisp.setContrast(Contrast);
+          }
+          else {
+            menuItem--;
+            if (menuItem < 1) menuItem = 1; 
+          }
+          break;
           
-          else if(selectCylinderMenu){
+        case 2:    //ENCODER DOWN
+          startMillis = millis();
+          if (selectStartSpeed) {
+            if (Target100 >= 5000) {
+              Target100 = 5000;
+            }
+            else {
+              Target100 += 10;
+            }
+          }
+
+          else if (selectCylinderMenu) {
             if (cylCoeff == 1) {
               cylCoeff = 4;
             }
@@ -1205,95 +1261,40 @@ void preferencesMenu(){
             }
           }
 
-          else if(selectClockMenu){
-             if (hourOffset < 24) {
-               hourOffset += 1;
-             }
-             else {
-               hourOffset = 24;
-             }
-             hour = hour + hourOffset - 12;
-             if (hour < 0) hour += 24;
-             if (hour > 24) hour -= 24;
+          else if (selectClockMenu) {
+            if (hourOffset < 24) {
+              hourOffset += 1;
+            }
+            else {
+              hourOffset = 24;
+            }
+            hour = hour + hourOffset - 12;
+            if (hour < 0) hour += 24;
+            if (hour > 24) hour -= 24;
           }
 
-          else if(selectMeasurementMenu){
+          else if (selectMeasurementMenu) {
             mph = !mph;
           }
 
-          else if(selectTempMenu){
+          else if (selectTempMenu) {
             celsius = !celsius;
           }
 
-          else if(selectContrastMenu){
-             if (Contrast >= 40) {
-               Contrast = 40;
-             }
-             else {
-               Contrast += 1;
-             }
-             mydisp.setContrast(Contrast);
-          }
-          else{
-            menuItem--;
-            if(menuItem < 1) menuItem = 1;
-          }
-          break;
-          
-        case 2:    //ENCODER DOWN
-          startMillis = millis();
-          if(selectStartSpeed){
-            if (Target100 <= 500) {
-              Target100 = 500;
+          else if (selectContrastMenu) {
+            if (Contrast >= 40) {
+              Contrast = 40;
             }
             else {
-              Target100 -= 10;
+              Contrast += 1;
             }
-          }
-          
-          else if(selectCylinderMenu){
-            if (cylCoeff > 4) {
-              cylCoeff = cylCoeff - 2;
-            }
-            else {
-              cylCoeff = 1;
-            }
-          }
-
-          else if(selectClockMenu){
-             if (hourOffset > 0) {
-               hourOffset -= 1;
-             }
-             else {
-               hourOffset = 0;
-             }
-             hours = gps.time.hour() + hourOffset - 12;
-             if (hours < 0) hours += 24;
-             if (hours > 24) hours -= 24;
-          }
-
-          else if(selectMeasurementMenu){
-            mph = !mph;
-          }
-
-          else if(selectTempMenu){
-            celsius = !celsius;
-          }
-
-          else if(selectContrastMenu){
-             if (Contrast <= 20) {
-               Contrast = 20;
-             }
-             else {
-               Contrast -= 1;
-             }
             mydisp.setContrast(Contrast);
           }
-          else{
+          else {
             menuItem++;
-            if(menuItem > 6) menuItem = 6;
+            if (menuItem > 6) menuItem = 6;
           }
-          break;
+          break; 
 
         case 4:  // ENCODER BUTTON SHORT PRESS
           if (menuItem == 1) selectStartSpeed = !selectStartSpeed;
