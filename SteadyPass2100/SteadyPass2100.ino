@@ -175,8 +175,12 @@ void  isr();                                  //encoder - Interrupt service rout
 void  PIDCalculations();                      //Calulate Speed Adjustments based on MPH or RPM depending on mode
 void  MainDisplay();                          //Runs the Main LCD screen
 void  Menu();                                 //runs the USER menu options
-int read_encoder();                          //Reads knob up/down/press/longpress for menu cases
+int read_encoder();                           //Reads knob up/down/press/longpress for menu cases
 void updateTempuratureVoltRead();
+void PrintEZ(const char* text, int fontSize, int posX, int posY, int offsetX, int offsetY, bool inverted, int delayAfter);
+void PrintEZ(double text, int fontSize, int posX, int posY, int offsetX, int offsetY, bool inverted, int delayAfter);
+void PrintEZ(int text, int fontSize, int posX, int posY, int offsetX, int offsetY, bool inverted, int delayAfter);
+void PrintEZ(byte text, int fontSize, int posX, int posY, int offsetX, int offsetY, bool inverted, int delayAfter);
 
 //************************************************************************************************|
 //*********** PERFORM STARTUP TASKS | DISPLAY STARTUP | GPS CONFIGURATION | READ MEMORY **********|
@@ -191,25 +195,15 @@ void setup()
   delay (3000);
   mydisp.begin();
   mydisp.clearScreen();  delay(100);
-  mydisp.setFont(30);
-  mydisp.setPrintPos(0, 1);
-  mydisp.print("   ");  delay(100);  mydisp.print("STEADYPASS");
-  mydisp.setPrintPos(0, 2);
-  delay(1000);  
-  mydisp.print(" Version: ");
-  mydisp.print(CurrentVersion);
-  delay(1000);
-  mydisp.setPrintPos(0, 3);
-  mydisp.print(" DRAIN PLUG IN? ");
-  delay(3000);
+  PrintEZ("STEADYPASS", 30, 3, 1, 0, 0, false, 1000);
+  PrintEZ(" Version: ", 30, 0, 2, 0, 0, false, 0);
+  PrintEZ(CurrentVersion, 30, 10, 2, 0, 0, false, 1000);
+  PrintEZ(" DRAIN PLUG IN? ", 30, 0, 3, 0, 0, false, 3000);
   mydisp.clearScreen();
   delay(500);
   if (EEPROM.read(200) != 2)
   {
-    mydisp.setFont(30);
-    mydisp.setPrintPos(0, 3);
-    mydisp.print(" INITIALIZE MEM  ");
-    delay(2000);
+    PrintEZ(" INITIALIZE MEM  ", 30, 0, 3, 0, 0, false, 2000);
     EEPROM.write(11, 6);      //cylCoeff
     EEPROM.write(18, 1);      //Speed Units
     EEPROM.write(19, 12);     //Time Offset
@@ -226,10 +220,7 @@ void setup()
   }
   if (EEPROM.read(201) != 3)
   {
-    mydisp.setFont(30);
-    mydisp.setPrintPos(0, 3);
-    mydisp.print("UPDATING TUNING");
-    delay(5000);
+    PrintEZ("UPDATING TUNING", 30, 0, 3, 0, 0, false, 5000);
     EEPROM.write(12, 0); //KP whole
     EEPROM.write(13, 50); //KP dec
     EEPROM.write(14, 0); //KI whole
@@ -246,12 +237,8 @@ void setup()
     mydisp.clearScreen();
     delay(500);
   }
-  mydisp.setFont(30);
-  mydisp.setPrintPos(0, 1);
-  mydisp.print("ACQUIRING SIGNAL");
-  mydisp.setPrintPos(0, 3);
-  mydisp.print("  PLEASE WAIT ");
-  delay(1000);
+  PrintEZ("ACQUIRING SIGNAL", 30, 0, 1, 0, 0, false, 0);
+  PrintEZ("  PLEASE WAIT ", 30, 0, 3, 0, 0, false, 1000);
   pinMode(PinCLK, INPUT);                     //rotary encoder
   pinMode(PinDT, INPUT);                      //rotary encoder
   pinMode(PinSW, INPUT_PULLUP);               //rotary encoder button
@@ -584,10 +571,7 @@ void MainDisplay()
   mydisp.print(hours); mydisp.print(":"); if (minutes < 10) mydisp.print("0"); mydisp.print(minutes); mydisp.print(":"); if (seconds < 10) mydisp.print("0"); mydisp.print(seconds); mydisp.print("  ");
 
   //print word "GPS"//
-  mydisp.setFont(10);
-  mydisp.setPrintPos(18, 3);
-  mydisp.setTextPosOffset(2, -2);
-  mydisp.print("GPS");
+  PrintEZ("GPS", 10, 18, 3, 2, -2, false, 0);
 
   //Print word "MPH" or "KPH"//
   mydisp.setPrintPos(18, 4);
@@ -631,14 +615,12 @@ void MainDisplay()
   }
 
   //Prints Voltage
-  mydisp.setFont(10);
-  mydisp.setPrintPos(0, 2);
-  mydisp.print("V ");  mydisp.print(voltage); mydisp.print("  ");
+  PrintEZ("V ", 10, 0, 2, 0, 0, false, 0);
+  mydisp.print(voltage); mydisp.print("  ");
 
   //print GPS directional
-  mydisp.setFont(10);
-  mydisp.setPrintPos(0, 3);
-  mydisp.print("DIR "); mydisp.print(gpsCourse[1]); mydisp.print(gpsCourse[2]);
+  PrintEZ("DIR ", 10, 0, 3, 0, 0, false, 0);
+  mydisp.print(gpsCourse[1]); mydisp.print(gpsCourse[2]);
 
 
   // Prints Water Temp and Air Temp
@@ -652,15 +634,12 @@ void MainDisplay()
   mydisp.print("RPM "); mydisp.print(readRpm()); mydisp.print("    ");
 
   //Prints the Main Speed value On Display
-  mydisp.setFont(203);
-  mydisp.setPrintPos(0, 0);
-  mydisp.setTextPosOffset(46, 22);
+  PrintEZ("", 203, 0, 0, 46, 22, false, 0);
   if (speedValue < 100) mydisp.print('0');
   mydisp.print(speedValue / 10);
-  mydisp.setFont(201);
-  mydisp.setPrintPos(0, 0);
-  mydisp.setTextPosOffset(111, 43);
-  mydisp.print(speedValue % 10);
+ 
+  //Prints the decimal value of the Main Speed
+  PrintEZ(speedValue % 10, 201, 0, 0, 111, 43, false, 0);
   firstMainDispLoop = false;
 }
 //End Function
@@ -720,9 +699,7 @@ int read_encoder() {
     if (inMenuPress > buttonTarget) {
       inMenuPress = 0;
       mydisp.clearScreen();
-      mydisp.setFont(20);
-      mydisp.setPrintPos(0, 0);
-      mydisp.print("BACK");
+      PrintEZ("BACK", 20, 0, 0, 0, 0, false, 0);
       while (digitalRead(PinSW) == LOW) {};
       mydisp.clearScreen();
       return btnLongPress;
@@ -748,26 +725,15 @@ void Menu(){
   selectMeasurementMenu = false;
   selectTestServo = false;
   menuItem = 1;
-  mydisp.setFont(10); 
   startMillis = millis();
   do {
     stillSelecting = true;
-    mydisp.setPrintPos(0, 0); 
-    if (menuItem == 1) mydisp.print(">>");
-    mydisp.print("Tuning  ");
-    delay(20);
-     
-    mydisp.setPrintPos(0, 1); 
-    if (menuItem == 2) mydisp.print(">>");
-    mydisp.print("Servo  ");
-    delay(20);
   
-    mydisp.setPrintPos(0, 2); 
-    if (menuItem == 3) mydisp.print(">>");
-    mydisp.print("Preferences  ");
-    delay(20); 
-    
-        switch (read_encoder())
+    PrintEZ(" Tuning ", 10, 0, 0, 0, 0, menuItem == 1, 20);
+    PrintEZ(" Servo ", 10, 0, 1, 0, 0, menuItem == 2, 20);
+    PrintEZ(" Preferences ", 10, 0, 2, 0, 0, menuItem == 3, 20);
+
+    switch (read_encoder())
       {
         case 1:  // ENCODER UP
           startMillis = millis();
@@ -799,390 +765,368 @@ void Menu(){
   }
   while (stillSelecting == true);
 }
-
   
-void tuningMenu(){
-  menuItem = 1;
-  startMillis = millis();
+    
+    void tuningMenu() {
+    menuItem = 1;
+    startMillis = millis();
 
-do{
-  mydisp.setFont(10); 
-  mydisp.setPrintPos(0, 0); 
-  if (menuItem == 1) mydisp.print(">>");
-  mydisp.print("Target P:"); if (selectPonEKp) mydisp.print("("); mydisp.print(PonEKp); if (selectPonEKp) mydisp.print(")"); mydisp.print("  ");
-  delay(25); 
-  
-  mydisp.setPrintPos(0, 1);
-  if (menuItem == 2) mydisp.print(">>");
-  mydisp.print("Target I:"); if (selectPonEKi) mydisp.print("("); mydisp.print(PonEKi);  if (selectPonEKi) mydisp.print(")"); mydisp.print("  ");
-  delay(25);
+    do {
 
-  mydisp.setPrintPos(0, 2);
-   if (menuItem == 3) mydisp.print(">>");
-   mydisp.print("Target D:"); if (selectPonEKd) mydisp.print("("); mydisp.print(PonEKd);  if (selectPonEKd) mydisp.print(")"); mydisp.print("  ");
-    delay(25);
- 
-   mydisp.setPrintPos(0, 4);
-   if (menuItem == 4) mydisp.print(">>");
-   mydisp.print("Accel P:"); if (selectPonMKp) mydisp.print("("); mydisp.print(PonMKp); if (selectPonMKp) mydisp.print(")"); mydisp.print("  ");
-   delay(25);  
+      PrintEZ("Target P: ", 10, 0, 0, 0, 0, menuItem == 1, 0);
+      PrintEZ(PonEKp, 10, 11, 0, 0, 0, selectPonEKp, 25);
+      
+      PrintEZ("Target I: ", 10, 0, 1, 0, 0, menuItem == 2, 0);
+      PrintEZ(PonEKi, 10, 11, 1, 0, 0, selectPonEKi, 25);
 
-  mydisp.setPrintPos(0, 5);
-  if (menuItem == 5) mydisp.print(">>");
-  mydisp.print("Accel I:"); if (selectPonMKi) mydisp.print("("); mydisp.print(PonMKi); if (selectPonMKi) mydisp.print(")"); mydisp.print("  ");
-  delay(25); 
+      PrintEZ("Target D: ", 10, 0, 2, 0, 0, menuItem == 3, 0);
+      PrintEZ(PonEKd, 10, 11, 2, 0, 0, selectPonEKd, 25);
 
-  mydisp.setPrintPos(0, 6); 
-  if (menuItem == 6) mydisp.print(">>");
-  mydisp.print("Accel D:"); if (selectPonMKd) mydisp.print("("); mydisp.print(PonMKd); if (selectPonMKd) mydisp.print(")");mydisp.print("  ");
-  delay(25);
+      PrintEZ("Accel P: ", 10, 0, 4, 0, 0, menuItem == 4, 0);
+      PrintEZ(PonMKp, 10, 10, 4, 0, 0, selectPonMKp, 25);
 
+      PrintEZ("Accel I: ", 10, 0, 5, 0, 0, menuItem == 5, 0);
+      PrintEZ(PonMKi, 10, 10, 5, 0, 0, selectPonMKi, 25);
 
-    switch (read_encoder())
+      PrintEZ("Accel D: ", 10, 0, 6, 0, 0, menuItem == 6, 0);
+      PrintEZ(PonMKd, 10, 10, 6, 0, 0, selectPonMKd, 25);
+
+      switch (read_encoder())
       {
-        stillSelecting = true;  
-        case 1:  // ENCODER UP
-          startMillis = millis();
+        stillSelecting = true;
+      case 1:  // ENCODER UP
+        startMillis = millis();
 
 
-          if (selectPonEKp) {
-            PonEKp = PonEKp * 100;
-            if (PonEKp <= 0) {
-              PonEKp = 0;
-            }
-            else {
-              PonEKp -= 1;
-            }
-            EKp100 = PonEKp;
-            PonEKp /= 100;
+        if (selectPonEKp) {
+          PonEKp = PonEKp * 100;
+          if (PonEKp <= 0) {
+            PonEKp = 0;
           }
-
-          else if (selectPonEKi) {
-            PonEKi = PonEKi * 100;
-            if (PonEKi <= 0) {
-              PonEKi = 0;
-            }
-            else {
-              PonEKi -= 1;
-            }
-            EKi100 = PonEKi;
-            PonEKi /= 100;
+          else {
+            PonEKp -= 1;
           }
-
-          else if (selectPonEKd) {
-            PonEKd = PonEKd * 100;
-            if (PonEKd <= 0) {
-              PonEKd = 0;
-            }
-            else {
-              PonEKd -= 1;
-            }
-            EKd100 = PonEKd;
-            PonEKd /= 100;
-          }
-
-          else if (selectPonMKp) {
-            PonMKp = PonMKp * 100;
-            if (PonMKp <= 0) {
-              PonMKp = 0;
-            }
-            else {
-              PonMKp -= 1;
-            }
-            Kp100 = PonMKp;
-            PonMKp /= 100;
-          }
-
-          else if (selectPonMKi) {
-            PonMKi = PonMKi * 100;
-            if (PonMKi <= 0) {
-              PonMKi = 0;
-            }
-            else {
-              PonMKi -= 1;
-            }
-            Ki100 = PonMKi;
-            PonMKi /= 100;
-          }
-
-          else if (selectPonMKd) {
-            PonMKd = PonMKd * 100;
-            if (PonMKd <= 0) {
-              PonMKd = 0;
-            }
-            else {
-              PonMKd -= 1;
-            }
-            Kd100 = PonMKd;
-            PonMKd /= 100;
-          }
-          else{
-            menuItem--;
-            if(menuItem < 1) menuItem = 1;
-          }
-          break;
-
-          
-        case 2:    //ENCODER DOWN
-          startMillis = millis();
-          if (selectPonEKp) {
-            PonEKp = PonEKp * 100;
-            if (PonEKp >= 100) {
-              PonEKp = 100;
-            }
-            else {
-              PonEKp += 1;
-            }
-            EKp100 = PonEKp;
-            PonEKp /= 100;
-          }
-
-          else if (selectPonEKi) {
-            PonEKi = PonEKi * 100;
-            if (PonEKi >= 100) {
-              PonEKi = 100;
-            }
-            else {
-              PonEKi += 1;
-            }
-            EKi100 = PonEKi;
-            PonEKi /= 100;
-          }
-
-          else if (selectPonEKd) {
-            PonEKd = PonEKd * 100;
-            if (PonEKd >= 100) {
-              PonEKd = 100;
-            }
-            else {
-              PonEKd += 1;
-            }
-            EKd100 = PonEKd;
-            PonEKd /= 100;
-          }
-
-          else if (selectPonMKp) {
-            PonMKp = PonMKp * 100;
-            if (PonMKp >= 100) {
-              PonMKp = 100;
-            }
-            else {
-              PonMKp += 1;
-            }
-            Kp100 = PonMKp;
-            PonMKp /= 100;
-          }
-
-          else if (selectPonMKi) {
-            PonMKi = PonMKi * 100;
-            if (PonMKi >= 100) {
-              PonMKi = 100;
-            }
-            else {
-              PonMKi += 1;
-            }
-            Ki100 = PonMKi;
-            PonMKi /= 100;
-          }
-
-          else if (selectPonMKd) {
-            PonMKd = PonMKd * 100;
-            if (PonMKd >= 100) {
-              PonMKd = 100;
-            }
-            else {
-              PonMKd += 1;
-            }
-            Kd100 = PonMKd;
-            PonMKd /= 100;
-          }
-        
-        else{
-           menuItem++;
-           if(menuItem > 6) menuItem = 6;
+          EKp100 = PonEKp;
+          PonEKp /= 100;
         }
-          break;
-        case 4:  // ENCODER BUTTON SHORT PRESS
-          startMillis = millis();
-          if (menuItem == 1) selectPonEKp = !selectPonEKp;
-          if (menuItem == 2) selectPonEKi = !selectPonEKi;
-          if (menuItem == 3) selectPonEKd = !selectPonEKd;
-          if (menuItem == 4) selectPonMKp = !selectPonMKp;
-          if (menuItem == 5) selectPonMKi = !selectPonMKi;
-          if (menuItem == 6) selectPonMKd = !selectPonMKd;
-          break;
-        case 8:  // ENCODER BUTTON LONG PRESS
-          Menu();
-          break;
-        case 16:  // ENCODER BUTTON NULL
-          currentMillis = millis();
-          if ((currentMillis - startMillis) >= menuTimeout) {
-            mydisp.clearScreen();
-            returnToMainDisp();
+
+        else if (selectPonEKi) {
+          PonEKi = PonEKi * 100;
+          if (PonEKi <= 0) {
+            PonEKi = 0;
           }
-          break;
+          else {
+            PonEKi -= 1;
+          }
+          EKi100 = PonEKi;
+          PonEKi /= 100;
+        }
+
+        else if (selectPonEKd) {
+          PonEKd = PonEKd * 100;
+          if (PonEKd <= 0) {
+            PonEKd = 0;
+          }
+          else {
+            PonEKd -= 1;
+          }
+          EKd100 = PonEKd;
+          PonEKd /= 100;
+        }
+
+        else if (selectPonMKp) {
+          PonMKp = PonMKp * 100;
+          if (PonMKp <= 0) {
+            PonMKp = 0;
+          }
+          else {
+            PonMKp -= 1;
+          }
+          Kp100 = PonMKp;
+          PonMKp /= 100;
+        }
+
+        else if (selectPonMKi) {
+          PonMKi = PonMKi * 100;
+          if (PonMKi <= 0) {
+            PonMKi = 0;
+          }
+          else {
+            PonMKi -= 1;
+          }
+          Ki100 = PonMKi;
+          PonMKi /= 100;
+        }
+
+        else if (selectPonMKd) {
+          PonMKd = PonMKd * 100;
+          if (PonMKd <= 0) {
+            PonMKd = 0;
+          }
+          else {
+            PonMKd -= 1;
+          }
+          Kd100 = PonMKd;
+          PonMKd /= 100;
+        }
+        else {
+          menuItem--;
+          if (menuItem < 1) menuItem = 1;
+        }
+        break;
+
+
+      case 2:    //ENCODER DOWN
+        startMillis = millis();
+        if (selectPonEKp) {
+          PonEKp = PonEKp * 100;
+          if (PonEKp >= 100) {
+            PonEKp = 100;
+          }
+          else {
+            PonEKp += 1;
+          }
+          EKp100 = PonEKp;
+          PonEKp /= 100;
+        }
+
+        else if (selectPonEKi) {
+          PonEKi = PonEKi * 100;
+          if (PonEKi >= 100) {
+            PonEKi = 100;
+          }
+          else {
+            PonEKi += 1;
+          }
+          EKi100 = PonEKi;
+          PonEKi /= 100;
+        }
+
+        else if (selectPonEKd) {
+          PonEKd = PonEKd * 100;
+          if (PonEKd >= 100) {
+            PonEKd = 100;
+          }
+          else {
+            PonEKd += 1;
+          }
+          EKd100 = PonEKd;
+          PonEKd /= 100;
+        }
+
+        else if (selectPonMKp) {
+          PonMKp = PonMKp * 100;
+          if (PonMKp >= 100) {
+            PonMKp = 100;
+          }
+          else {
+            PonMKp += 1;
+          }
+          Kp100 = PonMKp;
+          PonMKp /= 100;
+        }
+
+        else if (selectPonMKi) {
+          PonMKi = PonMKi * 100;
+          if (PonMKi >= 100) {
+            PonMKi = 100;
+          }
+          else {
+            PonMKi += 1;
+          }
+          Ki100 = PonMKi;
+          PonMKi /= 100;
+        }
+
+        else if (selectPonMKd) {
+          PonMKd = PonMKd * 100;
+          if (PonMKd >= 100) {
+            PonMKd = 100;
+          }
+          else {
+            PonMKd += 1;
+          }
+          Kd100 = PonMKd;
+          PonMKd /= 100;
+        }
+
+        else {
+          menuItem++;
+          if (menuItem > 6) menuItem = 6;
+        }
+        break;
+      case 4:  // ENCODER BUTTON SHORT PRESS
+        startMillis = millis();
+        if (menuItem == 1) selectPonEKp = !selectPonEKp;
+        if (menuItem == 2) selectPonEKi = !selectPonEKi;
+        if (menuItem == 3) selectPonEKd = !selectPonEKd;
+        if (menuItem == 4) selectPonMKp = !selectPonMKp;
+        if (menuItem == 5) selectPonMKi = !selectPonMKi;
+        if (menuItem == 6) selectPonMKd = !selectPonMKd;
+        break;
+      case 8:  // ENCODER BUTTON LONG PRESS
+        Menu();
+        break;
+      case 16:  // ENCODER BUTTON NULL
+        currentMillis = millis();
+        if ((currentMillis - startMillis) >= menuTimeout) {
+          mydisp.clearScreen();
+          returnToMainDisp();
+        }
+        break;
       }
+    } 
+   while (stillSelecting == true);
   }
-  while (stillSelecting == true);
-}
+
 
 void servoMenu(){
   menuItem = 1;
   do{
-    mydisp.setFont(10);
-    mydisp.setPrintPos(0, 0); 
-    if (menuItem == 1) mydisp.print(">>");
-    mydisp.print("Min Servo:"); if (selectMinServo) mydisp.print("("); mydisp.print(minServo); if (selectMinServo) mydisp.print(")"); mydisp.print("  "); 
+    PrintEZ("Min Servo: ", 10, 0, 0, 0, 0, menuItem == 1, 0);
+    PrintEZ(minServo, 10, 12, 0, 0, 0, selectMinServo, 20);
+    mydisp.print(" ");
+
+    PrintEZ("Max Servo: ", 10, 0, 1, 0, 0, menuItem == 2, 0);
+    PrintEZ(maxServo, 10, 12, 1, 0, 0, selectMaxServo, 20);
+    mydisp.print(" ");
     
-    mydisp.setPrintPos(0, 1);
-    if (menuItem == 2) mydisp.print(">>");
-    mydisp.print("Max Servo:"); if (selectMaxServo) mydisp.print("("); mydisp.print(maxServo); if (selectMaxServo) mydisp.print(")"); mydisp.print("  ");
-  
-    mydisp.setPrintPos(0, 2);
-     if (menuItem == 3) mydisp.print(">>");
-     mydisp.print("Test:");
-     if (selectTestServo) mydisp.print("(");
-     if (selectTestServo)mydisp.print("Testing"); else mydisp.print("Off");
-     if (selectTestServo) mydisp.print(")");
-     mydisp.print("    ");
-     mydisp.setPrintPos(0, 5);
-     mydisp.print("Servo Position: "); mydisp.print(pos); mydisp.print("  ");
+    PrintEZ("Test: ", 10, 0, 2, 0, 0, menuItem == 3, 20);
+
+    if (selectTestServo) {
+      PrintEZ("Testing", 10, 7, 2, 0, 0, true, 0);
+    }
+    else {
+      PrintEZ("Off    ", 10, 7, 2, 0, 0, false, 0);
+    }
+    mydisp.setPrintPos(0, 5);
+    mydisp.print("Servo Position: "); mydisp.print(pos); mydisp.print("  ");
      
-     myservo.writeMicroseconds(pos);
-     delay(100);
-     
-  switch (read_encoder())
-      {
-        stillSelecting = true;  
-        case 1:  // ENCODER UP
-          if (selectMaxServo) {
-            if (maxServo <= minServo) {
-              maxServo = minServo + 10;
-            }
-            else {
-              maxServo -= 10;
-            }
-            pos = maxServo;
-          }
+    myservo.writeMicroseconds(pos);
+    delay(100);
+    stillSelecting = true;
 
-          else if (selectMinServo) {
-            if (minServo <= 950) {
-              minServo = 950;
-            }
-            else {
-              minServo -= 10;
-            }
-            pos = minServo;
-          }
-          
-          else{
-            menuItem--;
-            if(menuItem < 1) menuItem = 1;
-          }
-          break;
-          
-        case 2:    //ENCODER DOWN
-          if (selectMaxServo) {
-            if (maxServo >= 1950) {
-              maxServo = 1950;
-            }
-            else {
-              maxServo += 10;
-            }
-            pos = maxServo;
-          }
-
-          else if (selectMinServo) {
-            if (minServo >= maxServo) {
-              minServo = maxServo - 10;
-            }
-            else {
-              minServo += 10;
-            }
-            pos = minServo;
-          }
-
-          else{
-            menuItem++;
-            if(menuItem > 3) menuItem = 3;
-          }
-          break;
-
-        case 4:  // ENCODER BUTTON SHORT PRESS
-          if (menuItem == 1) selectMinServo = !selectMinServo;
-          if (menuItem == 2) selectMaxServo = !selectMaxServo;
-          if (menuItem == 3) selectTestServo = !selectTestServo;
-
-          break;
-        case 8:  // ENCODER BUTTON LONG PRESS
-          Menu();
-          break;
-        case 16:  // ENCODER BUTTON NULL
-            if(selectTestServo){
-              if (pos <= minServo) S = 1;
-              if (pos >= maxServo) S = -1;
-              pos += 10 * S;
-            }
-          break;
-      }
-  }
-  while (stillSelecting == true);
+		switch (read_encoder()) {
+		case 1:  // ENCODER UP
+			if (selectMaxServo) {
+				if (maxServo <= minServo) {
+					maxServo = minServo + 10;
+				}
+				else {
+					maxServo -= 10;
+				}
+				pos = maxServo;
+			}
+      else if (selectMinServo) {
+				if (minServo <= 950) {
+					minServo = 950;
+				}
+				else {
+					minServo -= 10;
+				}
+				pos = minServo;
+			}
+      else {
+				menuItem--;
+				if (menuItem < 1) menuItem = 1;
+			}
+			break;
+		case 2:    //ENCODER DOWN
+			if (selectMaxServo) {
+				if (maxServo >= 1950) {
+					maxServo = 1950;
+				}
+				else {
+					maxServo += 10;
+				}
+				pos = maxServo;
+			}
+      else if (selectMinServo) {
+				if (minServo >= maxServo) {
+					minServo = maxServo - 10;
+				}
+				else {
+					minServo += 10;
+				}
+				pos = minServo;
+			}
+      else {
+				menuItem++;
+				if (menuItem > 3) menuItem = 3;
+			}
+			break;
+		case 4:  // ENCODER BUTTON SHORT PRESS
+			if (menuItem == 1) selectMinServo = !selectMinServo;
+			if (menuItem == 2) selectMaxServo = !selectMaxServo;
+			if (menuItem == 3) selectTestServo = !selectTestServo;
+			break;
+		case 8:  // ENCODER BUTTON LONG PRESS
+			Menu();
+			break;
+		case 16:  // ENCODER BUTTON NULL
+			if (selectTestServo) {
+				if (pos <= minServo) S = 1;
+				if (pos >= maxServo) S = -1;
+				pos += 10 * S;
+			}
+			break;
+		}
+	} while (stillSelecting == true);
 }
  
 
 void preferencesMenu(){
-   menuItem = 1;
-   startMillis = millis();
-   gps.encode(Serial1.read());
-       hours = gps.time.hour() + hourOffset - 12;
-       int hour = hours;
-       minutes = gps.time.minute();
-       seconds = gps.time.second();
-       
-   do{
-      mydisp.setFont(10);
-      mydisp.setPrintPos(0, 0); 
-      if (menuItem == 1) mydisp.print(">>");
-      mydisp.print("StartSpd:"); if (selectStartSpeed) mydisp.print("("); printTargetSpeed(); if (selectStartSpeed) mydisp.print(")"); mydisp.print("  ");
-        delay(20);
-        
-      mydisp.setPrintPos(0, 1);
-      if (menuItem == 2) mydisp.print(">>");
-      mydisp.print("Engine Cyl:"); if (selectCylinderMenu) mydisp.print("("); mydisp.print(cylCoeff); if (selectCylinderMenu) mydisp.print(")"); mydisp.print("  ");
-      delay(20);
-      
-      mydisp.setPrintPos(0, 2);
-       if (menuItem == 3) mydisp.print(">>");
-       mydisp.print("Clock Offset:");if (selectClockMenu) mydisp.print("("); mydisp.print(hourOffset - 12); if (selectClockMenu) mydisp.print(")"); mydisp.print("   "); // mydisp.print(hour); mydisp.print("  ");
-        delay(20);
-        
-     mydisp.setPrintPos(0, 3);
-       if (menuItem == 4) mydisp.print(">>");
-       mydisp.print("Unit Speed:"); 
-       if (selectMeasurementMenu) mydisp.print("("); 
-       if (mph) mydisp.print("MPH"); else mydisp.print("KPH");
-       if (selectMeasurementMenu) mydisp.print(")");  
-        mydisp.print("  ");
-       delay(20);
-         
-     mydisp.setPrintPos(0, 4);
-       if (menuItem == 5) mydisp.print(">>");
-       mydisp.print("Unit Temp:");
-       if (selectTempMenu) mydisp.print("("); 
-       if (celsius) mydisp.print("C"); else mydisp.print("F"); 
-       if (selectTempMenu) mydisp.print(")"); 
-       mydisp.print("  ");
-       delay(20);
-        
-    mydisp.setPrintPos(0, 5);
-       if (menuItem == 6) mydisp.print(">>");
-       mydisp.print("Contrast:"); if (selectContrastMenu) mydisp.print("(");  mydisp.print(Contrast); if (selectContrastMenu) mydisp.print(")"); mydisp.print("  ");
-       delay(20);
-       
+  menuItem = 1;
+  startMillis = millis();
 
-    switch (read_encoder())
-      {
-        stillSelecting = true;  
+      gps.encode(Serial1.read());
+      hours = gps.time.hour() + hourOffset - 12;
+      int hour = hours;
+      minutes = gps.time.minute();
+      seconds = gps.time.second();
+
+      do {
+        PrintEZ("StartSpd: ", 10, 0, 0, 0, 0, menuItem == 1, 0);
+        PrintEZ(TargetSpeedWhole(), 10, 11, 0, 0, 0, selectStartSpeed, 0);
+        PrintEZ(".", 10, -1, -1, 0, 0, selectStartSpeed, 0);
+        PrintEZ(TargetSpeedDecimal(), 10, -1, -1, 0, 0, selectStartSpeed, 0);
+        if (mph) {
+          PrintEZ(" MPH ", 10, -1, -1, 0, 0, selectStartSpeed, 20);
+        }
+        else {
+          PrintEZ(" KPH ", 10, -1, -1, 0, 0, selectStartSpeed, 20);
+        }
+        mydisp.print(" ");
+
+        PrintEZ("Engine Cyl: ", 10, 0, 1, 0, 0, menuItem == 2, 0);
+        PrintEZ(cylCoeff, 10, 13, 1, 0, 0, selectCylinderMenu, 20);
+
+        PrintEZ("Clock Offset: ", 10, 0, 2, 0, 0, menuItem == 3, 0);
+        PrintEZ(hourOffset - 12, 10, 15, 2, 0, 0, selectClockMenu,20);
+        mydisp.print(" ");
+
+        PrintEZ("Speed Units: ", 10, 0, 3, 0, 0, menuItem == 4, 0);
+        if (mph) {
+          PrintEZ(" MPH ", 10, -1, -1, 0, 0, selectMeasurementMenu, 20);
+        }
+        else {
+          PrintEZ(" KPH ", 10, -1, -1, 0, 0, selectMeasurementMenu, 20);
+        }
+
+        PrintEZ("Temp Units: ", 10, 0, 4, 0, 0, menuItem == 5, 0);
+        if (celsius) {
+          PrintEZ("C", 10, 13, 4, 0, 0, selectTempMenu, 20);
+        }
+        else {
+          PrintEZ("F", 10, 13, 4, 0, 0, selectTempMenu, 20);
+        }
+
+        PrintEZ("Contrast: ", 10, 0, 5, 0, 0, menuItem == 6, 0);
+        PrintEZ(Contrast, 10, 11, 5, 0, 0, selectContrastMenu, 20);
+
+        switch (read_encoder())
+        {
+          stillSelecting = true;
         case 1:  // ENCODER UP
           startMillis = millis();
           if (selectStartSpeed) {
@@ -1234,10 +1178,10 @@ void preferencesMenu(){
           }
           else {
             menuItem--;
-            if (menuItem < 1) menuItem = 1; 
+            if (menuItem < 1) menuItem = 1;
           }
           break;
-          
+
         case 2:    //ENCODER DOWN
           startMillis = millis();
           if (selectStartSpeed) {
@@ -1294,7 +1238,7 @@ void preferencesMenu(){
             menuItem++;
             if (menuItem > 6) menuItem = 6;
           }
-          break; 
+          break;
 
         case 4:  // ENCODER BUTTON SHORT PRESS
           if (menuItem == 1) selectStartSpeed = !selectStartSpeed;
@@ -1315,10 +1259,9 @@ void preferencesMenu(){
             returnToMainDisp();
           }
           break;
-      }
-  } 
-  while (stillSelecting == true);
-}
+        }
+      } while (stillSelecting == true);
+    }
 
 
 void returnToMainDisp()
@@ -1390,7 +1333,7 @@ void updateTempuratureVoltRead()
   else if (!celsius) wtrTemp = wtrTemp * 9 / 5 + 32;
 }
 
-void printTargetSpeed()
+int TargetSpeedWhole()
 {
   if (!mph) {
     TargetSpeedInt = Target100 * 1.61;
@@ -1400,15 +1343,106 @@ void printTargetSpeed()
     TargetSpeedInt = Target100 / 10;
   }
   targetSpeedWhole = TargetSpeedInt / 10;
-  targetSpeedDecimal = TargetSpeedInt % 10;
-  int c = targetSpeedDecimal + targetSpeedWhole;
-  if (c < 0) mydisp.print ("-");
-  else if (targetSpeedWhole < 10) mydisp.print (" ");
-  else mydisp.print ("");
-  if (targetSpeedWhole < 0) targetSpeedWhole = -targetSpeedWhole;
-  mydisp.print (targetSpeedWhole);
-  mydisp.print (".");
-  if (targetSpeedDecimal < 0)targetSpeedDecimal = -targetSpeedDecimal;
-  mydisp.print (targetSpeedDecimal);
-  if (mph) mydisp.print("MPH "); else mydisp.print("KPH ");
+  return targetSpeedWhole;
 }
+
+int TargetSpeedDecimal()
+{
+  if (!mph) {
+    TargetSpeedInt = Target100 * 1.61;
+    TargetSpeedInt = TargetSpeedInt / 10;
+  }
+  else {
+    TargetSpeedInt = Target100 / 10;
+  }
+  targetSpeedDecimal = TargetSpeedInt % 10;
+  return targetSpeedDecimal;
+}
+
+//*******************************************************************
+/* FUNCTION: BeforePrintEZ
+   DESCRIPTION: Used to set mutiple print paramaters before printing using the PrintEZ function
+*/
+void BeforePrintEZ(int fontSize, int posX, int posY, int offsetX, int offsetY, bool inverted)
+{
+  mydisp.setFont(fontSize);
+  if (posX >= 0 || posY >= 0) mydisp.setPrintPos(posX, posY);
+  if (offsetX != 0 || offsetY != 0) mydisp.setTextPosOffset(offsetX, offsetY);
+
+  //Print font in white on black if printing inverted
+  if (inverted) {
+    mydisp.setColor(0);
+    mydisp.setBgColor(1);
+  }
+}
+//End Function
+//-------------------------------------------------------------------
+
+//*******************************************************************
+/* FUNCTION: AfterPrintEZ
+   DESCRIPTION: Used to set mutiple print paramaters in one line of code
+*/
+void AfterPrintEZ(bool inverted, int delayAfter)
+{
+  //Return font to normal black on white state
+  if (inverted) {
+    mydisp.setColor(1);
+    mydisp.setBgColor(0);
+  }
+  if (delayAfter > 0) delay(delayAfter);
+}
+//End Function
+//-------------------------------------------------------------------
+
+
+//*******************************************************************
+/* FUNCTION: PrintEZ
+   DESCRIPTION: Used to set mutiple print paramaters in one line of code
+*/
+void PrintEZ(const char* text, int fontSize, int posX, int posY, int offsetX, int offsetY, bool inverted, int delayAfter)
+{
+  BeforePrintEZ(fontSize, posX, posY, offsetX, offsetY, inverted);
+  mydisp.print(text);
+  AfterPrintEZ(inverted, delayAfter);
+}
+//End Function
+//-------------------------------------------------------------------
+
+//*******************************************************************
+/* FUNCTION: PrintEZ
+   DESCTRIPTION: Used to set mutiple print paramaters in one line of code
+*/
+void PrintEZ(double text, int fontSize, int posX, int posY, int offsetX, int offsetY, bool inverted, int delayAfter)
+{
+  BeforePrintEZ(fontSize, posX, posY, offsetX, offsetY, inverted);
+  mydisp.print(text);
+  AfterPrintEZ(inverted, delayAfter);
+}
+//End Function
+//-------------------------------------------------------------------
+
+//*******************************************************************
+/* FUNCTION: PrintEZ
+   DESCTRIPTION: Used to set mutiple print paramaters in one line of code
+*/
+void PrintEZ(int text, int fontSize, int posX, int posY, int offsetX, int offsetY, bool inverted, int delayAfter)
+{
+  BeforePrintEZ(fontSize, posX, posY, offsetX, offsetY, inverted);
+  mydisp.print(text);
+  AfterPrintEZ(inverted, delayAfter);
+}
+//End Function
+//-------------------------------------------------------------------
+
+//*******************************************************************
+/* FUNCTION: PrintEZ
+   DESCTRIPTION: Used to set mutiple print paramaters in one line of code
+*/
+void PrintEZ(byte text, int fontSize, int posX, int posY, int offsetX, int offsetY, bool inverted, int delayAfter)
+{
+  BeforePrintEZ(fontSize, posX, posY, offsetX, offsetY, inverted);
+  mydisp.print(text);
+  AfterPrintEZ(inverted, delayAfter);
+}
+//End Function
+//-------------------------------------------------------------------
