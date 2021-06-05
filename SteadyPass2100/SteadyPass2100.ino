@@ -738,12 +738,12 @@ void Menu(){
         case 1:  // ENCODER UP
           startMillis = millis();
            menuItem--;
-           if(menuItem < 1) menuItem = 1;
+           if(menuItem < 1) menuItem = 3;
           break;
         case 2:    //ENCODER DOWN
           startMillis = millis();
            menuItem++;
-           if(menuItem > 3) menuItem = 3;
+           if(menuItem > 3) menuItem = 1;
           break;
         case 4:  // ENCODER BUTTON SHORT PRESS
           if (menuItem == 1) tuningMenu();
@@ -871,7 +871,7 @@ void Menu(){
         }
         else {
           menuItem--;
-          if (menuItem < 1) menuItem = 1;
+          if (menuItem < 1) menuItem = 6;
         }
         break;
 
@@ -952,7 +952,7 @@ void Menu(){
 
         else {
           menuItem++;
-          if (menuItem > 6) menuItem = 6;
+          if (menuItem > 6) menuItem = 1;
         }
         break;
       case 4:  // ENCODER BUTTON SHORT PRESS
@@ -1028,7 +1028,7 @@ void servoMenu(){
 			}
       else {
 				menuItem--;
-				if (menuItem < 1) menuItem = 1;
+				if (menuItem < 1) menuItem = 3;
 			}
 			break;
 		case 2:    //ENCODER DOWN
@@ -1052,7 +1052,7 @@ void servoMenu(){
 			}
       else {
 				menuItem++;
-				if (menuItem > 3) menuItem = 3;
+				if (menuItem > 3) menuItem = 1;
 			}
 			break;
 		case 4:  // ENCODER BUTTON SHORT PRESS
@@ -1178,7 +1178,7 @@ void preferencesMenu(){
           }
           else {
             menuItem--;
-            if (menuItem < 1) menuItem = 1;
+            if (menuItem < 1) menuItem = 6;
           }
           break;
 
@@ -1236,7 +1236,7 @@ void preferencesMenu(){
           }
           else {
             menuItem++;
-            if (menuItem > 6) menuItem = 6;
+            if (menuItem > 6) menuItem = 1;
           }
           break;
 
