@@ -206,38 +206,38 @@ void setup()
 	if (EEPROM.read(200) != 2)
 	{
 		PrintEZ(" INITIALIZE MEM  ", 30, 0, 3, 0, 0, false, 2000);
-		EEPROM.write(11, 6);      //cylCoeff
-		EEPROM.write(18, 1);      //Speed Units
-		EEPROM.write(19, 12);     //Time Offset
-		EEPROM.write(20, 195);    //MIN Throttle
-		EEPROM.write(21, 95);     //MAX Throttle
-		EEPROM.write(29, 1);      //Temp Units
-		EEPROM.write(30, 10);     //Startup Target
-		EEPROM.write(31, 1);      //Startup Target
-		//EEPROM.write(32, 0);
-		EEPROM.write(33, 30);     //Contrast
-		EEPROM.write(34, 11);	  //Startup RPM
-		EEPROM.write(35, 184);	  //Startup RPM
-		EEPROM.write(200, 2);     //Preferences Reset Bit
+		EEPROM.update(11, 6);      //cylCoeff
+		EEPROM.update(18, 1);      //Speed Units
+		EEPROM.update(19, 12);     //Time Offset
+		EEPROM.update(20, 195);    //MIN Throttle
+		EEPROM.update(21, 95);     //MAX Throttle
+		EEPROM.update(29, 1);      //Temp Units
+		EEPROM.update(30, 10);     //Startup Target
+		EEPROM.update(31, 1);      //Startup Target
+		//EEPROM.update(32, 0);
+		EEPROM.update(33, 30);     //Contrast
+		EEPROM.update(34, 11);	  //Startup RPM
+		EEPROM.update(35, 184);	  //Startup RPM
+		EEPROM.update(200, 2);     //Preferences Reset Bit
 		mydisp.clearScreen();
 		delay(500);
 	}
 	if (EEPROM.read(201) != 3)
 	{
 		PrintEZ("UPDATING TUNING", 30, 0, 3, 0, 0, false, 5000);
-		EEPROM.write(12, 0);  //KP whole
-		EEPROM.write(13, 50); //KP dec
-		EEPROM.write(14, 0);  //KI whole
-		EEPROM.write(15, 25); //KI dec
-		EEPROM.write(16, 0);  //KD whole
-		EEPROM.write(17, 5);  //KD dec
-		EEPROM.write(50, 0);  //KP whole
-		EEPROM.write(51, 30); //KP dec
-		EEPROM.write(52, 0);  //KI whole
-		EEPROM.write(53, 25); //KI dec
-		EEPROM.write(54, 0);  //KD whole
-		EEPROM.write(55, 5);  //KD dec
-		EEPROM.write(201, 3); //tuning Update Bit
+		EEPROM.update(12, 0);  //KP whole
+		EEPROM.update(13, 50); //KP dec
+		EEPROM.update(14, 0);  //KI whole
+		EEPROM.update(15, 25); //KI dec
+		EEPROM.update(16, 0);  //KD whole
+		EEPROM.update(17, 5);  //KD dec
+		EEPROM.update(50, 0);  //KP whole
+		EEPROM.update(51, 30); //KP dec
+		EEPROM.update(52, 0);  //KI whole
+		EEPROM.update(53, 25); //KI dec
+		EEPROM.update(54, 0);  //KD whole
+		EEPROM.update(55, 5);  //KD dec
+		EEPROM.update(201, 3); //tuning Update Bit
 		mydisp.clearScreen();
 		delay(500);
 	}
@@ -1329,22 +1329,22 @@ void returnToMainDisp()
 	writeWord(52, Ki100);
 	writeWord(54, Kd100);
 
-	EEPROM.write(11, cylCoeff);
-	if (mph) EEPROM.write(18, 1); else EEPROM.write(18, 0);
-	EEPROM.write(19, hourOffset);
-	EEPROM.write(20, maxServo / 10);
-	EEPROM.write(21, minServo / 10);
-	if (celsius) EEPROM.write(29, 1); else EEPROM.write(29, 0);
+	EEPROM.update(11, cylCoeff);
+	if (mph) EEPROM.update(18, 1); else EEPROM.update(18, 0);
+	EEPROM.update(19, hourOffset);
+	EEPROM.update(20, maxServo / 10);
+	EEPROM.update(21, minServo / 10);
+	if (celsius) EEPROM.update(29, 1); else EEPROM.update(29, 0);
 	writeWord(30, target100);
-	EEPROM.write(33, Contrast);
+	EEPROM.update(33, Contrast);
 	writeWord(34, targetRPM);
 }
 
 
 void writeWord(unsigned address, unsigned value)
 {
-	EEPROM.write(address, highByte(value));
-	EEPROM.write(address + 1, lowByte(value));
+	EEPROM.update(address, highByte(value));
+	EEPROM.update(address + 1, lowByte(value));
 }
 //End Function
 //-------------------------------------------------------------------
