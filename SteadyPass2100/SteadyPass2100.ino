@@ -1,39 +1,40 @@
-
+﻿
 
 /*
-	_________ __                     .___       __________                        ____   ________
-	/   _____//  |_  ____ _____     __| _/__.__. \______   \_____    ______ ______ \   \ /   /_   |
-	\_____  \\   __\/ __ \\__  \   / __ <   |  |  |     ___/\__  \  /  ___//  ___/  \       / |   |
-	/        \|  | \  ___/ / __ \_/ /_/ |\___  |  |    |     / __ \_\___ \ \___ \    \     /  |   |
-	/_______  /|__|  \___  >____  /\____ |/ ____|  |____|    /____  /____  >____  >    \___/   |___|
-	================================================================================================
+  ____    _                        _           ____                       __     __  _
+ / ___|  | |_    ___    __ _    __| |  _   _  |  _ \    __ _   ___   ___  \ \   / / / |
+ \___ \  | __|  / _ \  / _` |  / _` | | | | | | |_) |  / _` | / __| / __|  \ \ / /  | |
+  ___) | | |_  |  __/ | (_| | | (_| | | |_| | |  __/  | (_| | \__ \ \__ \   \ V /   | |
+ |____/   \__|  \___|  \__,_|  \__,_|  \__, | |_|      \__,_| |___/ |___/    \_/    |_|
+									   |___/
+
 ************************************************************************************************
-	---|FILE: SteadyPassV1.ino
-	---|Initial document Created By: Dimitry
-	---|Description: This is the code used to make everything work
-	---|  Change History
-	---| <17.xx - Dimitry   - All versions Prior to 17.00 have been solely created by Dimitry
-	---|  17.xx - Sam James - Renamed File from "Limiter_16_53.ino", Added Title and Change History, Added Function comment and Descriptions, Minor code changes made that will not effect the main code, Remade speed and RPM calc into one function, Created knob and button switches. Long press, short press,knob up, and knob down. Added basic scroll menu.
-	---|  18.00 - Sam James - New Menu, PID functioning correctly, optimizations
-	---|  18.01 - ''''''''' - Screen redraw fix, changed description on min/max servo, Kpid settings default text changed, exit from any >>>
-	---|  18.02 - ''''''''' - menu with long press, PID now pulls range change without reboot, created settings initialization on first boot
-	---|  18.03 - ''''''''' - Fixed Time Zone on boot and in menu setting, fixed servo pos change on setting change
-	---|  18.04 - ''''''''' - BETA RELEASE
-	---|  18.05 - ''''''''' - Fixed Target speed displaying MPH numbers while in KPH mode, changes Initial boot setting to P=.37 I=.25 D=.08 for faster initial end user tuning.
-	---|  18.06 - ''''''''' - Fixed switching MPH to RPM mode automatic Kd set to 0.00
-	---|  18.08 - ''''''''' - Added Water, Air, and voltage readings back in and working
-	---|  18.10 - ''''''''' - Slimmed down menu. GPS directional framework added, added RPM ignition coil mode(1 cyl)
-	---|  18.11 - ''''''''' - Added first GPS Degree and Directional on display
-	---|  18.12 - ''''''''' - Added 1 stage acceleration profile
-	---|  18.13 - ''''''''' - removed screen flip setting
-	---|  18.14 - ''''''''' - Added menu text to clarify long and short press (cancel and save),fixed startup speed rounding off issue,fixed KP and KI gain mixup, set default servo values to 950 and 1950, Set contrast limits, Added more GPS data variables
-	---|  18.15 - ''''''''' - Added In Motion simplified display framework (commented out), repaired fix issues in 18.14
-	---|  18.16 - ''''''''' - Added Target offset, Added menu options for accel control
-	---|  18.17 - ''''''''' - Commenting out Accel Control and Target Offset, Changed PID routine to P_ON_M
-	---|  19.01 - ''''''''' - calc in (P_ON_M) mode
-	---|  19.02 - ''''''''' - calc in (P_ON_E) mode
-	---|  19.03 - ''''''''' - Change calculations from PonM to PonE on the fly when target reached. goes back to PonM when 5mph off target
-	---|  20.00 - ''''''''' - Fixed Issue with calculation delay. Set new tune defaults to PonM| P-.25 I-.50 D-.05 and PonE|P-.25 I-.25 D-.05 PonE is not tunable during operation
+  ---|FILE: SteadyPassV1.ino
+  ---|Initial document Created By: Dimitry
+  ---|Description: This is the code used to make everything work
+  ---|  Change History
+  ---| <17.xx - Dimitry   - All versions Prior to 17.00 have been solely created by Dimitry
+  ---|  17.xx - Sam James - Renamed File from "Limiter_16_53.ino", Added Title and Change History, Added Function comment and Descriptions, Minor code changes made that will not effect the main code, Remade speed and RPM calc into one function, Created knob and button switches. Long press, short press,knob up, and knob down. Added basic scroll menu.
+  ---|  18.00 - Sam James - New Menu, PID functioning correctly, optimizations
+  ---|  18.01 - ''''''''' - Screen redraw fix, changed description on min/max servo, Kpid settings default text changed, exit from any >>>
+  ---|  18.02 - ''''''''' - menu with long press, PID now pulls range change without reboot, created settings initialization on first boot
+  ---|  18.03 - ''''''''' - Fixed Time Zone on boot and in menu setting, fixed servo pos change on setting change
+  ---|  18.04 - ''''''''' - BETA RELEASE
+  ---|  18.05 - ''''''''' - Fixed Target speed displaying MPH numbers while in KPH mode, changes Initial boot setting to P=.37 I=.25 D=.08 for faster initial end user tuning.
+  ---|  18.06 - ''''''''' - Fixed switching MPH to RPM mode automatic Kd set to 0.00
+  ---|  18.08 - ''''''''' - Added Water, Air, and voltage readings back in and working
+  ---|  18.10 - ''''''''' - Slimmed down menu. GPS directional framework added, added RPM ignition coil mode(1 cyl)
+  ---|  18.11 - ''''''''' - Added first GPS Degree and Directional on display
+  ---|  18.12 - ''''''''' - Added 1 stage acceleration profile
+  ---|  18.13 - ''''''''' - removed screen flip setting
+  ---|  18.14 - ''''''''' - Added menu text to clarify long and short press (cancel and save),fixed startup speed rounding off issue,fixed KP and KI gain mixup, set default servo values to 950 and 1950, Set contrast limits, Added more GPS data variables
+  ---|  18.15 - ''''''''' - Added In Motion simplified display framework (commented out), repaired fix issues in 18.14
+  ---|  18.16 - ''''''''' - Added Target offset, Added menu options for accel control
+  ---|  18.17 - ''''''''' - Commenting out Accel Control and Target Offset, Changed PID routine to P_ON_M
+  ---|  19.01 - ''''''''' - calc in (P_ON_M) mode
+  ---|  19.02 - ''''''''' - calc in (P_ON_E) mode
+  ---|  19.03 - ''''''''' - Change calculations from PonM to PonE on the fly when target reached. goes back to PonM when 5mph off target
+  ---|  20.00 - ''''''''' - Fixed Issue with calculation delay. Set new tune defaults to PonM| P-.25 I-.50 D-.05 and PonE|P-.25 I-.25 D-.05 PonE is not tunable during operation
 
 */
 
@@ -61,6 +62,7 @@ boolean selectPonMKd = false;
 boolean selectMaxServo = false;
 boolean selectMinServo = false;
 boolean selectStartSpeed = false;
+boolean selectStartRPM = false;
 boolean selectContrastMenu = false;
 boolean selectCylinderMenu = false;
 boolean selectClockMenu = false;
@@ -78,10 +80,10 @@ double KpInput = PonMKp;
 double KiInput = PonMKi;
 double KdInput = PonMKd;
 PID myPID(&Input, &Output, &Setpoint, KpInput, KiInput, KdInput, P_ON_M, REVERSE);
-#define MOVECURSOR 1  // constants for indicating whether cursor should be redrawn
-#define MOVELIST 2  // constants for indicating whether cursor should be redrawn
-byte totalRows = 6;  // total rows of LCD
-byte totalCols = 1;  // total columns of LCD
+//#define MOVECURSOR 1  // constants for indicating whether cursor should be redrawn
+//#define MOVELIST 2  // constants for indicating whether cursor should be redrawn
+//byte totalRows = 6;  // total rows of LCD
+//byte totalCols = 1;  // total columns of LCD
 
 
 TinyGPSPlus gps;                                //required for TinyGPSplus Library
@@ -124,7 +126,7 @@ boolean celsius = true;
 
 //*************SPEED INITIALIZATION*************
 int speedValue = 0, speedGps = 0;
-int TargetSpeedInt, Target100 = 500;
+int TargetSpeedInt, target100 = 500;
 int speed100, pos100;
 int gpsDegree;//,gpsHDOP,gpsSats,gpsLat,gpsLng,gpsAlt;
 int gpsSignalCounter = 0;
@@ -143,7 +145,7 @@ int menuItem = 1;
 volatile unsigned long duration = 0; // accumulates pulse width
 volatile unsigned long pulsecount = 0; //incremented by interrupt
 volatile unsigned long previousMicros = 0;
-//int targetRPM = 3000;
+int targetRPM = 3000;
 int CalcMode = 0;
 //*************SERVO INITIALIZATION*************
 Servo myservo;
@@ -214,6 +216,8 @@ void setup()
 		EEPROM.write(31, 1);      //Startup Target
 		//EEPROM.write(32, 0);
 		EEPROM.write(33, 30);     //Contrast
+		EEPROM.write(34, 11);	  //Startup RPM
+		EEPROM.write(35, 184);	  //Startup RPM
 		EEPROM.write(200, 2);     //Preferences Reset Bit
 		mydisp.clearScreen();
 		delay(500);
@@ -248,7 +252,7 @@ void setup()
 	myservo.attach(servoPin);                   // attaches the servo on pin  to the servo object
 	//PID Variables//
 	Input = speed100;
-	Setpoint = Target100;
+	Setpoint = target100;
 	//Turn on PID//
 	myPID.SetMode(AUTOMATIC);
 
@@ -273,8 +277,9 @@ void setup()
 	maxServo = 10 * EEPROM.read(20);
 	minServo = 10 * EEPROM.read(21);
 	celsius = EEPROM.read(29);
-	Target100 = readWord(30);
+	target100 = readWord(30);
 	Contrast = EEPROM.read(33);
+	targetRPM = readWord(34);
 
 	EKp100 = PonEKp * 100;
 	EKi100 = PonEKi * 100;
@@ -365,21 +370,35 @@ void loop()
 		pos = minServo;
 	}
 	else {
-		speedMode = true;
+		if (mode == 2) {
+			speedMode = false;
+		}
+		else {
+			speedMode = true;
+		}
 		PIDCalculations();
 	}
 	myservo.writeMicroseconds(pos);
 
 	//DISPLAY MAIN OUTPUT section
-	TargetSpeedInt = Target100 / 10;
+	TargetSpeedInt = target100 / 10;
 	speedValue = speed100 / 10;
 	if (!mph) speedValue *= 1.61;
 
 	if (mainDisplay) MainDisplay();  //DISPLAY MAIN OUTPUT
 
 	if (TurnDetected) {
-		if (mode == 1) Target100 += -10 * encoder;
-		if (Target100 < 0) Target100 = 0;
+		switch (mode) {
+		case 1:
+			target100 += -10 * encoder;
+			if (target100 < 0) target100 = 0;
+			break;
+
+		case 2:
+			targetRPM += -10 * encoder;
+			if (targetRPM < 0) targetRPM = 0;
+			break;
+		}
 		encoder = 0;
 		TurnDetected = false;
 	}
@@ -391,7 +410,7 @@ void loop()
 	else {
 		if (buttonTimes > 0) {
 			mode++;
-			if (mode > 1) mode = 0;
+			if (mode > 2) mode = 0;
 		}
 		buttonTimes = 0;
 	}
@@ -415,9 +434,9 @@ void loop()
 
 //*******************************************************************
 /* FUNCTION: smartDelay()
-	 INPUT: N/A
-	 RETURN: N/A
-	 DESCRIPTION: Reads Data from GPS device, Loops whiles data is transferring over Serial, ends loop once data is read.
+   INPUT: N/A
+   RETURN: N/A
+   DESCRIPTION: Reads Data from GPS device, Loops whiles data is transferring over Serial, ends loop once data is read.
 */
 static void smartDelay(unsigned long ms)
 {
@@ -433,9 +452,9 @@ static void smartDelay(unsigned long ms)
 
 //*******************************************************************
 /* FUNCTION: readRPM()
-	 INPUT: duration | pulsecount
-	 RETURN:freq
-	 DESCRIPTION: Takes INPUTs and runs an equation to turn it into an RPM reading
+   INPUT: duration | pulsecount
+   RETURN:freq
+   DESCRIPTION: Takes INPUTs and runs an equation to turn it into an RPM reading
 */
 int readRpm()
 {
@@ -451,9 +470,9 @@ int readRpm()
 
 //*******************************************************************
 /* FUNCTION: rpmIntHandler()
-	 INPUT: micros()
-	 RETURN: N/A
-	 DESCRIPTION: it's a interrupt handler for RPMs, need better knowledge for better description
+   INPUT: micros()
+   RETURN: N/A
+   DESCRIPTION: it's a interrupt handler for RPMs, need better knowledge for better description
 */
 void rpmIntHandler()
 {
@@ -466,9 +485,9 @@ void rpmIntHandler()
 
 //*******************************************************************
 /* FUNCTION: isr()
-	 INPUT: digitalread
-	 RETURN: increments encoder up or down
-	 DESCRIPTION: encoder - Interrupt service routine is executed when a HIGH to LOW transition is detected on CLK
+   INPUT: digitalread
+   RETURN: increments encoder up or down
+   DESCRIPTION: encoder - Interrupt service routine is executed when a HIGH to LOW transition is detected on CLK
 */
 void isr()
 {
@@ -488,38 +507,45 @@ void isr()
 
 //*******************************************************************
 /* FUNCTION: PIDCalculations
-	 INPUT: Speed100 or current RPM | target100 or targetRPM
-	 RETURN: pos
-	 DESCRIPTION: Runs an equation to calculate Change in speed based off MPH | needs better description later
+   INPUT: Speed100 or current RPM | target100 or targetRPM
+   RETURN: pos
+   DESCRIPTION: Runs an equation to calculate Change in speed based off MPH | needs better description later
 */
 void PIDCalculations()
 {
 	gap = (Setpoint - Input);
 	//  Serial.print(gap);
-		//PID INPUTS//
+	  //PID INPUTS//
 
-	//  if (speedMode) {
-	if (gap >= 500) {
-		if (!calcPonMMode) {
-			calcPonMMode = true;
-			KpInput = PonMKp;
-			KiInput = PonMKi;
-			KdInput = PonMKd;
-			CalcMode = P_ON_M;
+	if (speedMode) {
+		if (gap >= 500) {
+			if (!calcPonMMode) {
+				calcPonMMode = true;
+				KpInput = PonMKp;
+				KiInput = PonMKi;
+				KdInput = PonMKd;
+				CalcMode = P_ON_M;
+			}
 		}
-	}
-	else if (gap <= 0) {
-		if (calcPonMMode) {
-			calcPonMMode = false;
-			KpInput = PonEKp;
-			KiInput = PonEKi;
-			KdInput = PonEKd;
-			CalcMode = P_ON_E;
+		else if (gap <= 0) {
+			if (calcPonMMode) {
+				calcPonMMode = false;
+				KpInput = PonEKp;
+				KiInput = PonEKi;
+				KdInput = PonEKd;
+				CalcMode = P_ON_E;
+			}
 		}
+		myPID.SetTunings(KpInput, KiInput, KdInput, CalcMode);
+		Input = speed100;
+		Setpoint = target100;
 	}
-	myPID.SetTunings(KpInput, KiInput, KdInput, CalcMode);
-	Input = speed100;
-	Setpoint = Target100;
+	else {
+		Input = readRpm();
+		Setpoint = targetRPM;
+		PonEKd = 0.00;
+		myPID.SetTunings(PonEKp, PonEKi, PonEKd, P_ON_E);
+	}
 	myPID.Compute();
 	pos = Output;
 	//  Serial.print(Output); Serial.print("|||");
@@ -529,7 +555,7 @@ void PIDCalculations()
 
 //*******************************************************************
 /* FUNCTION:  MainDisplay()
-	 DESCRIPTION: This displays everything that you see
+   DESCRIPTION: This displays everything that you see
 */
 void MainDisplay()
 {
@@ -554,11 +580,11 @@ void MainDisplay()
 
 	//update MPH or KPH
 	if (!mph) {
-		TargetSpeedInt = Target100 * 1.61;
+		TargetSpeedInt = target100 * 1.61;
 		TargetSpeedInt = TargetSpeedInt / 10;
 	}
 	else {
-		TargetSpeedInt = Target100 / 10;
+		TargetSpeedInt = target100 / 10;
 	}
 	targetSpeedWhole = TargetSpeedInt / 10;
 	targetSpeedDecimal = TargetSpeedInt % 10;
@@ -612,6 +638,11 @@ void MainDisplay()
 		mydisp.print(targetSpeedDecimal);
 		if (mph) mydisp.print("MPH "); else mydisp.print("KPH ");
 	}
+	if (mode == 2) {
+		mydisp.print(" ");
+		mydisp.print(targetRPM);
+		mydisp.print("RPM");
+	}
 
 	//Prints Voltage
 	PrintEZ("V ", 10, 0, 2, 0, 0, false, 0);
@@ -647,7 +678,7 @@ void MainDisplay()
 
 //*******************************************************************
 /* FUNCTION: Menu()
-	 DESCRIPTION: Displays the main settings menu
+   DESCRIPTION: Displays the main settings menu
 */
 
 
@@ -717,6 +748,7 @@ void Menu() {
 	selectMaxServo = false;
 	selectMinServo = false;
 	selectStartSpeed = false;
+	selectStartRPM = false;
 	selectContrastMenu = false;
 	selectCylinderMenu = false;
 	selectClockMenu = false;
@@ -1083,8 +1115,8 @@ void preferencesMenu() {
 	seconds = gps.time.second();
 
 	do {
-		PrintEZ("StartSpd: ", 10, 0, 0, 0, 0, menuItem == 1, 0);
-		PrintEZ(TargetSpeedWhole(), 10, 11, 0, 0, 0, selectStartSpeed, 0);
+		PrintEZ("Start Spd: ", 10, 0, 0, 0, 0, menuItem == 1, 0);
+		PrintEZ(TargetSpeedWhole(), 10, 12, 0, 0, 0, selectStartSpeed, 0);
 		PrintEZ(".", 10, -1, -1, 0, 0, selectStartSpeed, 0);
 		PrintEZ(TargetSpeedDecimal(), 10, -1, -1, 0, 0, selectStartSpeed, 0);
 		if (mph) {
@@ -1095,14 +1127,17 @@ void preferencesMenu() {
 		}
 		mydisp.print(" ");
 
-		PrintEZ("Engine Cyl: ", 10, 0, 1, 0, 0, menuItem == 2, 0);
-		PrintEZ(cylCoeff, 10, 13, 1, 0, 0, selectCylinderMenu, 20);
+		PrintEZ("Start RPM: ", 10, 0, 1, 0, 0, menuItem == 2, 0);
+		PrintEZ(targetRPM, 10, 12, 1, 0, 0, selectStartRPM, 20);
 
-		PrintEZ("Clock Offset: ", 10, 0, 2, 0, 0, menuItem == 3, 0);
-		PrintEZ(hourOffset - 12, 10, 15, 2, 0, 0, selectClockMenu, 20);
+		PrintEZ("Engine Cyl: ", 10, 0, 2, 0, 0, menuItem == 3, 0);
+		PrintEZ(cylCoeff, 10, 13, 2, 0, 0, selectCylinderMenu, 20);
+
+		PrintEZ("Clock Offset: ", 10, 0, 3, 0, 0, menuItem == 4, 0);
+		PrintEZ(hourOffset - 12, 10, 15, 3, 0, 0, selectClockMenu, 20);
 		mydisp.print(" ");
 
-		PrintEZ("Speed Units: ", 10, 0, 3, 0, 0, menuItem == 4, 0);
+		PrintEZ("Speed Units: ", 10, 0, 4, 0, 0, menuItem == 5, 0);
 		if (mph) {
 			PrintEZ(" MPH ", 10, -1, -1, 0, 0, selectMeasurementMenu, 20);
 		}
@@ -1110,16 +1145,16 @@ void preferencesMenu() {
 			PrintEZ(" KPH ", 10, -1, -1, 0, 0, selectMeasurementMenu, 20);
 		}
 
-		PrintEZ("Temp Units: ", 10, 0, 4, 0, 0, menuItem == 5, 0);
+		PrintEZ("Temp Units: ", 10, 0, 5, 0, 0, menuItem == 6, 0);
 		if (celsius) {
-			PrintEZ("C", 10, 13, 4, 0, 0, selectTempMenu, 20);
+			PrintEZ("C", 10, 13, 5, 0, 0, selectTempMenu, 20);
 		}
 		else {
-			PrintEZ("F", 10, 13, 4, 0, 0, selectTempMenu, 20);
+			PrintEZ("F", 10, 13, 5, 0, 0, selectTempMenu, 20);
 		}
 
-		PrintEZ("Contrast: ", 10, 0, 5, 0, 0, menuItem == 6, 0);
-		PrintEZ(Contrast, 10, 11, 5, 0, 0, selectContrastMenu, 20);
+		PrintEZ("Contrast: ", 10, 0, 6, 0, 0, menuItem == 7, 0);
+		PrintEZ(Contrast, 10, 11, 6, 0, 0, selectContrastMenu, 20);
 
 		switch (read_encoder())
 		{
@@ -1127,14 +1162,24 @@ void preferencesMenu() {
 		case 1:  // ENCODER UP
 			startMillis = millis();
 			if (selectStartSpeed) {
-				if (Target100 <= 500) {
-					Target100 = 500;
+				if (target100 < 500) {
+					target100 = 500;
 				}
 				else {
-					Target100 -= 10;
+					target100 -= 10;
 				}
 			}
 
+			else if (selectStartRPM)
+			{
+				if (targetRPM < 500) {
+					targetRPM = 500;
+				}
+				else {
+					targetRPM -= 10;
+				}
+			}
+			
 			else if (selectCylinderMenu) {
 				if (cylCoeff > 4) {
 					cylCoeff = cylCoeff - 2;
@@ -1175,18 +1220,27 @@ void preferencesMenu() {
 			}
 			else {
 				menuItem--;
-				if (menuItem < 1) menuItem = 6;
+				if (menuItem < 1) menuItem = 7;
 			}
 			break;
 
 		case 2:    //ENCODER DOWN
 			startMillis = millis();
 			if (selectStartSpeed) {
-				if (Target100 >= 5000) {
-					Target100 = 5000;
+				if (target100 >= 5000) {
+					target100 = 5000;
 				}
 				else {
-					Target100 += 10;
+					target100 += 10;
+				}
+			}
+
+			else if (selectStartRPM) {
+				if (targetRPM >= 9000) {
+					targetRPM = 9000;
+				}
+				else {
+					targetRPM += 10;
 				}
 			}
 
@@ -1233,17 +1287,18 @@ void preferencesMenu() {
 			}
 			else {
 				menuItem++;
-				if (menuItem > 6) menuItem = 1;
+				if (menuItem > 7) menuItem = 1;
 			}
 			break;
 
 		case 4:  // ENCODER BUTTON SHORT PRESS
 			if (menuItem == 1) selectStartSpeed = !selectStartSpeed;
-			if (menuItem == 2) selectCylinderMenu = !selectCylinderMenu;
-			if (menuItem == 3) selectClockMenu = !selectClockMenu;
-			if (menuItem == 4) selectMeasurementMenu = !selectMeasurementMenu;
-			if (menuItem == 5) selectTempMenu = !selectTempMenu;
-			if (menuItem == 6) selectContrastMenu = !selectContrastMenu;
+			if (menuItem == 2) selectStartRPM = !selectStartRPM;
+			if (menuItem == 3) selectCylinderMenu = !selectCylinderMenu;
+			if (menuItem == 4) selectClockMenu = !selectClockMenu;
+			if (menuItem == 5) selectMeasurementMenu = !selectMeasurementMenu;
+			if (menuItem == 6) selectTempMenu = !selectTempMenu;
+			if (menuItem == 7) selectContrastMenu = !selectContrastMenu;
 
 			break;
 		case 8:  // ENCODER BUTTON LONG PRESS
@@ -1280,8 +1335,9 @@ void returnToMainDisp()
 	EEPROM.write(20, maxServo / 10);
 	EEPROM.write(21, minServo / 10);
 	if (celsius) EEPROM.write(29, 1); else EEPROM.write(29, 0);
-	writeWord(30, Target100);
+	writeWord(30, target100);
 	EEPROM.write(33, Contrast);
+	writeWord(34, targetRPM);
 }
 
 
@@ -1296,19 +1352,19 @@ void writeWord(unsigned address, unsigned value)
 
 //*******************************************************************
 /* FUNCTION: readWord
-	 DESCRIPTION: used for reading large value from EEPROM
+   DESCRIPTION: used for reading large value from EEPROM
 */
 unsigned readWord(unsigned address)
 {
 	return word(EEPROM.read(address), EEPROM.read(address + 1));
-}
+} 
 //End Function
 //-------------------------------------------------------------------
 
 
 //*******************************************************************
 /* FUNCTION: updateTemperatureVoltRead
-	 DESCRIPTION: updates the temperature and voltage readings for use by the main display
+   DESCRIPTION: updates the temperature and voltage readings for use by the main display
 */
 void updateTemperatureVoltRead()
 {
@@ -1333,11 +1389,11 @@ void updateTemperatureVoltRead()
 int TargetSpeedWhole()
 {
 	if (!mph) {
-		TargetSpeedInt = Target100 * 1.61;
+		TargetSpeedInt = target100 * 1.61;
 		TargetSpeedInt = TargetSpeedInt / 10;
 	}
 	else {
-		TargetSpeedInt = Target100 / 10;
+		TargetSpeedInt = target100 / 10;
 	}
 	targetSpeedWhole = TargetSpeedInt / 10;
 	return targetSpeedWhole;
@@ -1346,11 +1402,11 @@ int TargetSpeedWhole()
 int TargetSpeedDecimal()
 {
 	if (!mph) {
-		TargetSpeedInt = Target100 * 1.61;
+		TargetSpeedInt = target100 * 1.61;
 		TargetSpeedInt = TargetSpeedInt / 10;
 	}
 	else {
-		TargetSpeedInt = Target100 / 10;
+		TargetSpeedInt = target100 / 10;
 	}
 	targetSpeedDecimal = TargetSpeedInt % 10;
 	return targetSpeedDecimal;
@@ -1358,7 +1414,7 @@ int TargetSpeedDecimal()
 
 //*******************************************************************
 /* FUNCTION: BeforePrintEZ
-	 DESCRIPTION: Used to set multiple print parameters before printing using the PrintEZ function
+   DESCRIPTION: Used to set multiple print parameters before printing using the PrintEZ function
 */
 void BeforePrintEZ(int fontSize, int posX, int posY, int offsetX, int offsetY, bool inverted)
 {
@@ -1377,7 +1433,7 @@ void BeforePrintEZ(int fontSize, int posX, int posY, int offsetX, int offsetY, b
 
 //*******************************************************************
 /* FUNCTION: AfterPrintEZ
-	 DESCRIPTION: Used to set multiple print parameters after printing using the PrintEZ function
+   DESCRIPTION: Used to set multiple print parameters after printing using the PrintEZ function
 */
 void AfterPrintEZ(bool inverted, int delayAfter)
 {
@@ -1394,7 +1450,7 @@ void AfterPrintEZ(bool inverted, int delayAfter)
 
 //*******************************************************************
 /* FUNCTION: PrintEZ
-	 DESCRIPTION: Used to set multiple print parameters in one line of code
+   DESCRIPTION: Used to set multiple print parameters in one line of code
 */
 void PrintEZ(const char* text, int fontSize, int posX, int posY, int offsetX, int offsetY, bool inverted, int delayAfter)
 {
@@ -1407,7 +1463,7 @@ void PrintEZ(const char* text, int fontSize, int posX, int posY, int offsetX, in
 
 //*******************************************************************
 /* FUNCTION: PrintEZ
-	 DESCRIPTION: Used to set multiple print parameters in one line of code
+   DESCRIPTION: Used to set multiple print parameters in one line of code
 */
 void PrintEZ(double text, int fontSize, int posX, int posY, int offsetX, int offsetY, bool inverted, int delayAfter)
 {
@@ -1420,7 +1476,7 @@ void PrintEZ(double text, int fontSize, int posX, int posY, int offsetX, int off
 
 //*******************************************************************
 /* FUNCTION: PrintEZ
-	 DESCRIPTION: Used to set multiple print parameters in one line of code
+   DESCRIPTION: Used to set multiple print parameters in one line of code
 */
 void PrintEZ(int text, int fontSize, int posX, int posY, int offsetX, int offsetY, bool inverted, int delayAfter)
 {
@@ -1433,7 +1489,7 @@ void PrintEZ(int text, int fontSize, int posX, int posY, int offsetX, int offset
 
 //*******************************************************************
 /* FUNCTION: PrintEZ
-	 DESCRIPTION: Used to set multiple print parameters in one line of code
+   DESCRIPTION: Used to set multiple print parameters in one line of code
 */
 void PrintEZ(byte text, int fontSize, int posX, int posY, int offsetX, int offsetY, bool inverted, int delayAfter)
 {
