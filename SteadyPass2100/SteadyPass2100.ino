@@ -6,7 +6,7 @@
  \___ \  | __|  / _ \  / _` |  / _` | | | | | | |_) |  / _` | / __| / __|  \ \ / /  | |
   ___) | | |_  |  __/ | (_| | | (_| | | |_| | |  __/  | (_| | \__ \ \__ \   \ V /   | |
  |____/   \__|  \___|  \__,_|  \__,_|  \__, | |_|      \__,_| |___/ |___/    \_/    |_|
-									   |___/
+                                       |___/
 
 ************************************************************************************************
   ---|FILE: SteadyPassV1.ino
@@ -143,6 +143,7 @@ byte inMenuPress = 0;
 byte buttonTarget = 7;
 boolean mainDisplay = true;
 volatile long encoder = 0;
+int encoderChange = 0;
 int hours, minutes, seconds, hourOffset = 12;
 boolean speedMode = false;
 unsigned long startMillis = 0;
@@ -370,6 +371,7 @@ void loop()
 	if (TurnDetected) {
 		switch (mode) {
 		case 1:
+
 			target100 += -10 * encoder;
 			if (target100 < 0) target100 = 0;
 			break;
@@ -656,10 +658,7 @@ void MainDisplay()
 //-------------------------------------------------------------------
 
 
-//*******************************************************************
-/* FUNCTION: Menu()
-   DESCRIPTION: Displays the main settings menu
-*/
+
 
 
 
@@ -672,21 +671,25 @@ int read_encoder() {
 
 	if (TurnDetected) {
 		if (encoder > 0) {
+			encoderChange = encoder;
 			encoder = 0;
 			TurnDetected = false;
 			return btnUp;
 		}
 		else if (encoder < 0) {
+			encoderChange = encoder;
 			encoder = 0;
 			TurnDetected = false;
 			return btnDown;
 		}
 		else {
+			encoderChange = 0;
 			TurnDetected = false;
 			return btnNull;
 		}
 	}
 	else {
+		encoderChange = 0;
 		if (digitalRead(PinSW) == LOW)
 		{
 			inMenuPress++;
@@ -717,6 +720,10 @@ int read_encoder() {
 	}
 }
 
+//*******************************************************************
+/* FUNCTION: Menu()
+   DESCRIPTION: Displays the main settings menu
+*/
 void Menu() {
 	//Reset selectors to false
 	menuItemSelected = 0;
@@ -728,9 +735,7 @@ void Menu() {
 		PrintEZ(" Tuning ", 10, 0, 0, 0, 0, menuItem == 1, 20);
 		PrintEZ(" Servo ", 10, 0, 1, 0, 0, menuItem == 2, 20);
 		PrintEZ(" Preferences ", 10, 0, 2, 0, 0, menuItem == 3, 20);
-
-		switch (read_encoder())
-		{
+		switch (read_encoder())	{
 		case 1:  // ENCODER UP
 			startMillis = millis();
 			menuItem--;
@@ -788,162 +793,8 @@ void tuningMenu() {
 		PrintEZ(PonMKd, 10, 10, 6, 0, 0, menuItemSelected == 6, 25);
 
 		stillSelecting = true;
-		switch (read_encoder())	{
-		case 1:  // ENCODER UP
-			startMillis = millis();
-
-			switch (menuItemSelected) {
-			case 1: // Target P
-				PonEKp = PonEKp * 100;
-				if (PonEKp <= 0) {
-					PonEKp = 0;
-				}
-				else {
-					PonEKp -= 1;
-				}
-				EKp100 = PonEKp;
-				PonEKp /= 100;
-				break;
-			case 2: // Target I
-				PonEKi = PonEKi * 100;
-				if (PonEKi <= 0) {
-					PonEKi = 0;
-				}
-				else {
-					PonEKi -= 1;
-				}
-				EKi100 = PonEKi;
-				PonEKi /= 100;
-				break;
-			case 3: // Target D
-				PonEKd = PonEKd * 100;
-				if (PonEKd <= 0) {
-					PonEKd = 0;
-				}
-				else {
-					PonEKd -= 1;
-				}
-				EKd100 = PonEKd;
-				PonEKd /= 100;
-				break;
-			case 4: // Accel P
-				PonMKp = PonMKp * 100;
-				if (PonMKp <= 0) {
-					PonMKp = 0;
-				}
-				else {
-					PonMKp -= 1;
-				}
-				Kp100 = PonMKp;
-				PonMKp /= 100;
-				break;
-			case 5: // Accel I
-				PonMKi = PonMKi * 100;
-				if (PonMKi <= 0) {
-					PonMKi = 0;
-				}
-				else {
-					PonMKi -= 1;
-				}
-				Ki100 = PonMKi;
-				PonMKi /= 100;
-				break;
-			case 6: // Accel D
-				PonMKd = PonMKd * 100;
-				if (PonMKd <= 0) {
-					PonMKd = 0;
-				}
-				else {
-					PonMKd -= 1;
-				}
-				Kd100 = PonMKd;
-				PonMKd /= 100;
-				break;
-			default: //No menu item selected
-				menuItem--;
-				if (menuItem < 1) menuItem = 6;
-				break;
-			}
-			break;
-		case 2:    //ENCODER DOWN
-			startMillis = millis();
-
-			switch (menuItemSelected) {
-			case 1: // Target P
-				PonEKp = PonEKp * 100;
-				if (PonEKp >= 100) {
-					PonEKp = 100;
-				}
-				else {
-					PonEKp += 1;
-				}
-				EKp100 = PonEKp;
-				PonEKp /= 100;
-				break;
-			case 2: // Target I
-				PonEKi = PonEKi * 100;
-				if (PonEKi >= 100) {
-					PonEKi = 100;
-				}
-				else {
-					PonEKi += 1;
-				}
-				EKi100 = PonEKi;
-				PonEKi /= 100;
-				break;
-			case 3: // Target D
-				PonEKd = PonEKd * 100;
-				if (PonEKd >= 100) {
-					PonEKd = 100;
-				}
-				else {
-					PonEKd += 1;
-				}
-				EKd100 = PonEKd;
-				PonEKd /= 100;
-				break;
-			case 4: // Accel P
-				PonMKp = PonMKp * 100;
-				if (PonMKp >= 100) {
-					PonMKp = 100;
-				}
-				else {
-					PonMKp += 1;
-				}
-				Kp100 = PonMKp;
-				PonMKp /= 100;
-				break;
-			case 5: // Accel I
-				PonMKi = PonMKi * 100;
-				if (PonMKi >= 100) {
-					PonMKi = 100;
-				}
-				else {
-					PonMKi += 1;
-				}
-				Ki100 = PonMKi;
-				PonMKi /= 100;
-				break;
-			case 6: // Accel D
-				PonMKd = PonMKd * 100;
-				if (PonMKd >= 100) {
-					PonMKd = 100;
-				}
-				else {
-					PonMKd += 1;
-				}
-				Kd100 = PonMKd;
-				PonMKd /= 100;
-				break;
-			default:  // No menu item selected
-				menuItem++;
-				if (menuItem > 6) menuItem = 1;
-				break;
-			}
-
-			break;
+		switch (read_encoder()) {
 		case 4:  // ENCODER BUTTON SHORT PRESS
-
 			startMillis = millis();
 			if (menuItemSelected == 0) {
 				menuItemSelected = menuItem;
@@ -959,7 +810,72 @@ void tuningMenu() {
 			currentMillis = millis();
 			if ((currentMillis - startMillis) >= menuTimeout) {
 				mydisp.clearScreen();
+				stillSelecting = false;
 				returnToMainDisp();
+			}
+			break;
+		default:  // ENCODER TURNED
+			startMillis = millis();
+
+			switch (menuItemSelected) {
+			case 1: // Target P
+				PonEKp = PonEKp * 100;
+				PonEKp -= encoderChange;
+				if (PonEKp >= 100) PonEKp = 100;
+				if (PonEKp <= 0) PonEKp = 0;
+				EKp100 = PonEKp;
+				PonEKp /= 100;
+				break;
+			case 2: // Target I
+				PonEKi = PonEKi * 100;
+				PonEKi -= encoderChange;
+				if (PonEKi >= 100) PonEKi = 100;
+				if (PonEKi <= 0) PonEKi = 0;
+				EKi100 = PonEKi;
+				PonEKi /= 100;
+				break;
+			case 3: // Target D
+				PonEKd = PonEKd * 100;
+				PonEKd -= encoderChange;
+				if (PonEKd >= 100) PonEKd = 100;
+				if (PonEKd <= 0) PonEKd = 0;
+				EKd100 = PonEKd;
+				PonEKd /= 100;
+				break;
+			case 4: // Accel P
+				PonMKp = PonMKp * 100;
+				PonMKp -= encoderChange;
+				if (PonMKp >= 100) PonMKp = 100;
+				if (PonMKp <= 0) PonMKp = 0;
+				Kp100 = PonMKp;
+				PonMKp /= 100;
+				break;
+			case 5: // Accel I
+				PonMKi = PonMKi * 100;
+				PonMKi -= encoderChange;
+				if (PonMKi >= 100) PonMKi = 100;
+				if (PonMKi <= 0) PonMKi = 0;
+				Ki100 = PonMKi;
+				PonMKi /= 100;
+				break;
+			case 6: // Accel D
+				PonMKd = PonMKd * 100;
+				PonMKd -= encoderChange;
+				if (PonMKd >= 100) PonMKd = 100;
+				if (PonMKd <= 0) PonMKd = 0;
+				Kd100 = PonMKd;
+				PonMKd /= 100;
+				break;
+			default: //No menu item selected
+				if (encoderChange < 0) {
+					menuItem++;
+					if (menuItem > 6) menuItem = 1;
+				}
+				else if (encoderChange >0) {
+					menuItem--;
+					if (menuItem < 1) menuItem = 6;
+				}
+				break;
 			}
 			break;
 		}
@@ -968,6 +884,7 @@ void tuningMenu() {
 
 
 void servoMenu() {
+	menuItemSelected = 0;
 	menuItem = 1;
 	do {
 		PrintEZ("Min Servo: ", 10, 0, 0, 0, 0, menuItem == 1, 0);
@@ -994,60 +911,6 @@ void servoMenu() {
 		stillSelecting = true;
 
 		switch (read_encoder()) {
-		case 1:  // ENCODER UP
-			switch (menuItemSelected)
-			{
-			case 1:
-				if (minServo <= 950) {
-					minServo = 950;
-				}
-				else {
-					minServo -= 10;
-				}
-				pos = minServo;
-				break;
-			case 2:
-				if (maxServo <= minServo) {
-					maxServo = minServo + 10;
-				}
-				else {
-					maxServo -= 10;
-				}
-				pos = maxServo;
-				break;
-			default:
-				menuItem--;
-				if (menuItem < 1) menuItem = 3;
-				break;
-			}
-			break;
-		case 2:    //ENCODER DOWN
-			switch (menuItem)
-			{
-			case 1:
-				if (minServo >= maxServo) {
-					minServo = maxServo - 10;
-				}
-				else {
-					minServo += 10;
-				}
-				pos = minServo;
-				break;
-			case 2:
-				if (maxServo >= 1950) {
-					maxServo = 1950;
-				}
-				else {
-					maxServo += 10;
-				}
-				pos = maxServo;
-				break;
-			default:
-				menuItem++;
-				if (menuItem > 3) menuItem = 1;
-				break;
-			}
-			break;
 		case 4:  // ENCODER BUTTON SHORT PRESS
 			if (menuItemSelected == 0) {
 				menuItemSelected = menuItem;
@@ -1061,9 +924,35 @@ void servoMenu() {
 			break;
 		case 16:  // ENCODER BUTTON NULL
 			if (menuItemSelected == 3) {
+				pos += 10 * S;
 				if (pos <= minServo) S = 1;
 				if (pos >= maxServo) S = -1;
-				pos += 10 * S;
+			}
+			break;
+		default:
+			switch (menuItemSelected) {
+			case 1: // MIN SERVO
+				minServo -= encoderChange * 10;
+				if (minServo <= 950) minServo = 950;				
+				if (minServo >= maxServo) minServo = maxServo - 10;
+				pos = minServo;
+				break;
+			case 2: // MAX SERVO
+				maxServo -= encoderChange * 10;
+				if (maxServo <= minServo) maxServo = minServo + 10;
+				if (maxServo >= 1950) maxServo = 1950;
+				pos = maxServo;
+				break;
+			default:
+				if (encoderChange < 0) {
+					menuItem++;
+					if (menuItem > 3) menuItem = 1;
+				}
+				else if (encoderChange > 0) {
+					menuItem--;
+					if (menuItem < 1) menuItem = 3;
+				}
+				break;
 			}
 			break;
 		}
@@ -1072,6 +961,7 @@ void servoMenu() {
 
 
 void preferencesMenu() {
+	menuItemSelected = 0;
 	menuItem = 1;
 	startMillis = millis();
 
@@ -1124,127 +1014,6 @@ void preferencesMenu() {
 		PrintEZ(Contrast, 10, 11, 6, 0, 0, menuItemSelected == 7, 20);
 		stillSelecting = true;
 		switch (read_encoder()){
-		case 1:  // ENCODER UP
-			startMillis = millis();
-			
-			switch (menuItemSelected) {
-			case 1:  // Start speed
-				if (target100 < 500) {
-					target100 = 500;
-				}
-				else {
-					target100 -= 10;
-				}
-				break;
-			case 2:  // Start RPM
-				if (targetRPM < 500) {
-					targetRPM = 500;
-				}
-				else {
-					targetRPM -= 10;
-				}
-				break;
-			case 3: // Engine Cylinders
-				if (cylCoeff > 4) {
-					cylCoeff = cylCoeff - 2;
-				}
-				else {
-					cylCoeff = 1;
-				}
-				break;
-			case 4: // Clock Offset
-				if (hourOffset > 0) {
-					hourOffset -= 1;
-				}
-				else {
-					hourOffset = 0;
-				}
-				hours = gps.time.hour() + hourOffset - 12;
-				if (hours < 0) hours += 24;
-				if (hours > 24) hours -= 24;
-				break;
-			case 5:  // Speed Units
-				mph = !mph;
-				break;
-			case 6: // Temp Units
-				celsius = !celsius;
-				break;
-			case 7: // Contrast
-				if (Contrast <= 20) {
-					Contrast = 20;
-				}
-				else {
-					Contrast -= 1;
-				}
-				mydisp.setContrast(Contrast);
-				break;
-			default:
-				menuItem--;
-				if (menuItem < 1) menuItem = 7;
-				break;
-			}
-		case 2:    //ENCODER DOWN
-			startMillis = millis();
-			switch (menuItemSelected){
-			case 1: // Start Speed
-				if (target100 >= 5000) {
-					target100 = 5000;
-				}
-				else {
-					target100 += 10;
-				}
-				break;
-			case 2: // Start RPM
-				if (targetRPM >= 9000) {
-					targetRPM = 9000;
-				}
-				else {
-					targetRPM += 10;
-				}
-				break;
-			case 3: // Engine Cylinders
-				if (cylCoeff == 1) {
-					cylCoeff = 4;
-				}
-				else if (cylCoeff < 8) {
-					cylCoeff = cylCoeff + 2;
-				}
-				else {
-					cylCoeff = 8;
-				}
-				break;
-			case 4: // Clock Offset
-				if (hourOffset < 24) {
-					hourOffset += 1;
-				}
-				else {
-					hourOffset = 24;
-				}
-				hour = hour + hourOffset - 12;
-				if (hour < 0) hour += 24;
-				if (hour > 24) hour -= 24;
-				break;
-			case 5: // Speed Units
-				mph = !mph;
-				break;
-			case 6: // Temp Units
-				celsius = !celsius;
-				break;
-			case 7: // Contrast
-				if (Contrast >= 40) {
-					Contrast = 40;
-				}
-				else {
-					Contrast += 1;
-				}
-				mydisp.setContrast(Contrast);
-				break;
-			default:
-				menuItem++;
-				if (menuItem > 7) menuItem = 1;
-				break;
-			}
-			break;
 		case 4:  // ENCODER BUTTON SHORT PRESS
 			if (menuItemSelected == 0) {
 				menuItemSelected = menuItem;
@@ -1261,6 +1030,70 @@ void preferencesMenu() {
 			if ((currentMillis - startMillis) >= menuTimeout) {
 				mydisp.clearScreen();
 				returnToMainDisp();
+			}
+			break;
+		default:  // ENCODER TURNED
+			startMillis = millis();
+
+			switch (menuItemSelected) {
+			case 1: // Start Speed
+				target100 -= encoderChange *10;
+				if (target100 < 500) target100 = 500;
+				if (target100 >= 5000) target100 = 5000;
+				break;
+			case 2: // Start RPM
+				targetRPM -= encoderChange *10;
+				if (targetRPM < 500) targetRPM = 500;
+				if (targetRPM >= 9900) targetRPM = 9900;
+				break;
+			case 3: // Engine Cylinders
+				if (encoderChange > 0) {
+					if (cylCoeff > 4) {
+						cylCoeff = cylCoeff - 2;
+					}
+					else {
+						cylCoeff = 1;
+					}
+				}
+				else if (encoderChange < 0) {
+					if (cylCoeff == 1) {
+						cylCoeff = 4;
+					}
+					else if (cylCoeff < 8) {
+						cylCoeff = cylCoeff + 2;
+					}
+					else {
+						cylCoeff = 8;
+					}
+				}
+				break;
+			case 4: // Clock Offset
+				hourOffset -= encoderChange;
+				if (hourOffset < 0) hourOffset = 24;
+				if (hourOffset > 24) hourOffset = 0;
+				break;
+			case 5: // Speed Units
+				if (encoderChange || 0) mph = !mph;
+				break;
+			case 6: // Temp Units
+				if (encoderChange || 0) celsius = !celsius;
+				break;
+			case 7: // Contrast
+				Contrast -= encoderChange;
+				if (Contrast >= 40) Contrast = 40;
+				if (Contrast <= 20) Contrast = 20;
+				mydisp.setContrast(Contrast);
+				break;
+			default:
+				if (encoderChange < 0) {
+					menuItem++;
+					if (menuItem > 7) menuItem = 1;
+				}
+				else if (encoderChange > 0) {
+					menuItem--;
+					if (menuItem < 1) menuItem = 7;
+				}
+				break;
 			}
 			break;
 		}
