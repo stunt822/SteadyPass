@@ -1,13 +1,13 @@
 ﻿
 
-/*
-  ____    _                        _           ____                       __     __  _
- / ___|  | |_    ___    __ _    __| |  _   _  |  _ \    __ _   ___   ___  \ \   / / / |
- \___ \  | __|  / _ \  / _` |  / _` | | | | | | |_) |  / _` | / __| / __|  \ \ / /  | |
-  ___) | | |_  |  __/ | (_| | | (_| | | |_| | |  __/  | (_| | \__ \ \__ \   \ V /   | |
- |____/   \__|  \___|  \__,_|  \__,_|  \__, | |_|      \__,_| |___/ |___/    \_/    |_|
-                                       |___/
-
+/***********************************************************************************************
+|  ____    _                        _           ____                       __     __  _
+| / ___|  | |_    ___    __ _    __| |  _   _  |  _ \    __ _   ___   ___  \ \   / / / |
+| \___ \  | __|  / _ \  / _` |  / _` | | | | | | |_) |  / _` | / __| / __|  \ \ / /  | |
+|  ___) | | |_  |  __/ | (_| | | (_| | | |_| | |  __/  | (_| | \__ \ \__ \   \ V /   | |
+| |____/   \__|  \___|  \__,_|  \__,_|  \__, | |_|      \__,_| |___/ |___/    \_/    |_|
+|                                        |___/
+|
 ************************************************************************************************
   ---|FILE: SteadyPassV1.ino
   ---|Initial document Created By: Dimitry
@@ -117,16 +117,16 @@ unsigned long delayCheck = 0;
 unsigned long throttleCheck = 0;
 unsigned long temperatureCheck = 0;
 unsigned long gpsCourseCheck = 0;
-int targetSpeedWhole = TargetSpeedInt / 10;
-int targetSpeedDecimal = TargetSpeedInt % 10;
-int Contrast;
-int menuItem = 1;
+byte targetSpeedWhole = TargetSpeedInt / 10;
+byte targetSpeedDecimal = TargetSpeedInt % 10;
+byte Contrast;
+byte menuItem = 1;
 //*************RPM INITIALIZATION*************
 volatile unsigned long duration = 0; // accumulates pulse width
 volatile unsigned long pulsecount = 0; //incremented by interrupt
 volatile unsigned long previousMicros = 0;
 int targetRPM = 3000;
-int CalcMode = 0;
+byte CalcMode = 0;
 //*************SERVO INITIALIZATION*************
 Servo myservo;
 int minServo = 950;
@@ -144,7 +144,7 @@ byte buttonTarget = 7;
 boolean mainDisplay = true;
 volatile long encoder = 0;
 int encoderChange = 0;
-int hours, minutes, seconds, hourOffset = 12;
+byte hours, minutes, seconds, hourOffset = 12;
 boolean speedMode = false;
 unsigned long startMillis = 0;
 unsigned long currentMillis;
@@ -599,8 +599,12 @@ void MainDisplay()
 	//Print target MPH or KPH depending on mode selection
 	mydisp.setFont(18);
 	mydisp.setPrintPos(6, 0);
-	if (mode == 0) mydisp.print("   OFF  ");
-	if (mode == 1) {
+
+	switch (mode) {
+	case 0:
+		mydisp.print("   OFF  ");
+		break;
+	case 1:
 		if (c < 0) {
 			mydisp.print(" -");
 		}
@@ -619,12 +623,14 @@ void MainDisplay()
 		}
 		mydisp.print(targetSpeedDecimal);
 		if (mph) mydisp.print("MPH "); else mydisp.print("KPH ");
-	}
-	if (mode == 2) {
+		break;
+	case 2:
 		mydisp.print(" ");
 		mydisp.print(targetRPM);
 		mydisp.print("RPM");
+		break;
 	}
+
 
 	//Prints Voltage
 	PrintEZ("V ", 10, 0, 2, 0, 0, false, 0);
@@ -964,12 +970,6 @@ void preferencesMenu() {
 	menuItemSelected = 0;
 	menuItem = 1;
 	startMillis = millis();
-
-	gps.encode(Serial1.read());
-	hours = gps.time.hour() + hourOffset - 12;
-	int hour = hours;
-	minutes = gps.time.minute();
-	seconds = gps.time.second();
 
 	do {
 		PrintEZ("Start Spd: ", 10, 0, 0, 0, 0, menuItem == 1, 0);
