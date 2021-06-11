@@ -746,9 +746,9 @@ void Menu() {
 	do {
 		stillSelecting = true;
 
-		PrintEZ(" Tuning ", 10, 0, 0, 0, 0, menuItem == 1, 20);
-		PrintEZ(" Servo ", 10, 0, 1, 0, 0, menuItem == 2, 20);
-		PrintEZ(" Preferences ", 10, 0, 2, 0, 0, menuItem == 3, 20);
+		PrintEZ(" Tuning ", 20, 0, 0, 0, 0, menuItem == 1, 20);
+		PrintEZ(" Servo ", 20, 0, 1, 0, 0, menuItem == 2, 20);
+		PrintEZ(" Preferences ", 20, 0, 2, 0, 0, menuItem == 3, 20);
 		switch (read_encoder())	{
 		case 1:  // ENCODER UP
 			startMillis = millis();
