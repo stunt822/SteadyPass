@@ -81,7 +81,15 @@ const byte PinCLK = 3;             //encoder second pin
 const byte PinDT = 2;              // Used for reading DT signal of encoder
 const byte PinSW = 4;              //encoder button
 const byte servoPin = 5;           //servo PWM connected here
-const byte rpmPin = 44;            //Engine RPM input connected here
+
+#if defined(__AVR_ATmega2560__)
+	//Code in here will only be compiled if an Arduino Mega is used.
+	const byte rpmPin = 44;        //Engine RPM input connected here
+#else
+	//Code in here will only be compiled if an Arduino Leonardo is used.
+	const byte rpmPin = 7;         //Engine RPM input connected here
+#endif
+
 //8 and 9 - LCD, defined above
 //open - 10 - LCD SS?
 const byte tempWtrPin = 11;        //temperature water
