@@ -1,5 +1,3 @@
-﻿
-
 /***********************************************************************************************
 |  ____    _                        _           ____                       __     __  _
 | / ___|  | |_    ___    __ _    __| |  _   _  |  _ \    __ _   ___   ___  \ \   / / / |
@@ -77,17 +75,20 @@ byte mode = 0;                                  //Calculations mode 0=off 1=RPM 
 
 //*****PIN CONFIGURATION******
 //0 and 1 = GPS
-const byte PinCLK = 3;             //encoder second pin
-const byte PinDT = 2;              // Used for reading DT signal of encoder
+
 const byte PinSW = 4;              //encoder button
 const byte servoPin = 5;           //servo PWM connected here
 
 #if defined(__AVR_ATmega2560__)
-	//Code in here will only be compiled if an Arduino Mega is used.
+  //Code in here will only be compiled if an Arduino Mega is used.
 	const byte rpmPin = 44;        //Engine RPM input connected here
+	const byte PinCLK = 3;         //encoder second pin
+	const byte PinDT = 2;          // Used for reading DT signal of encoder
 #else
-	//Code in here will only be compiled if an Arduino Leonardo is used.
+  //Code in here will only be compiled if an Arduino Leonardo is used.
 	const byte rpmPin = 7;         //Engine RPM input connected here
+	const byte PinCLK = 2;         //encoder second pin
+	const byte PinDT = 3;          // Used for reading DT signal of encoder
 #endif
 
 //8 and 9 - LCD, defined above
@@ -205,8 +206,8 @@ void setup()
 		EEPROM.update(31, 1);      //Startup Target
 		//EEPROM.update(32, 0);
 		EEPROM.update(33, 30);     //Contrast
-		EEPROM.update(34, 11);	  //Startup RPM
-		EEPROM.update(35, 184);	  //Startup RPM
+		EEPROM.update(34, 11);    //Startup RPM
+		EEPROM.update(35, 184);   //Startup RPM
 		EEPROM.update(200, 2);     //Preferences Reset Bit
 		mydisp.clearScreen();
 		delay(500);
@@ -749,7 +750,7 @@ void Menu() {
 		PrintEZ(" Tuning ", 20, 0, 0, 0, 0, menuItem == 1, 20);
 		PrintEZ(" Servo ", 20, 0, 1, 0, 0, menuItem == 2, 20);
 		PrintEZ(" Preferences ", 20, 0, 2, 0, 0, menuItem == 3, 20);
-		switch (read_encoder())	{
+		switch (read_encoder()) {
 		case 1:  // ENCODER UP
 			startMillis = millis();
 			menuItem--;
@@ -885,7 +886,7 @@ void tuningMenu() {
 					menuItem++;
 					if (menuItem > 6) menuItem = 1;
 				}
-				else if (encoderChange >0) {
+				else if (encoderChange > 0) {
 					menuItem--;
 					if (menuItem < 1) menuItem = 6;
 				}
@@ -947,7 +948,7 @@ void servoMenu() {
 			switch (menuItemSelected) {
 			case 1: // MIN SERVO
 				minServo -= encoderChange * 10;
-				if (minServo <= 950) minServo = 950;				
+				if (minServo <= 950) minServo = 950;
 				if (minServo >= maxServo) minServo = maxServo - 10;
 				pos = minServo;
 				break;
@@ -1021,14 +1022,14 @@ void preferencesMenu() {
 		PrintEZ("Contrast: ", 10, 0, 6, 0, 0, menuItem == 7, 0);
 		PrintEZ(Contrast, 10, 11, 6, 0, 0, menuItemSelected == 7, 20);
 		stillSelecting = true;
-		switch (read_encoder()){
+		switch (read_encoder()) {
 		case 4:  // ENCODER BUTTON SHORT PRESS
 			if (menuItemSelected == 0) {
 				menuItemSelected = menuItem;
 			}
 			else {
 				menuItemSelected = 0;
-			}			
+			}
 			break;
 		case 8:  // ENCODER BUTTON LONG PRESS
 			Menu();
@@ -1045,12 +1046,12 @@ void preferencesMenu() {
 
 			switch (menuItemSelected) {
 			case 1: // Start Speed
-				target100 -= encoderChange *10;
+				target100 -= encoderChange * 10;
 				if (target100 < 500) target100 = 500;
 				if (target100 >= 5000) target100 = 5000;
 				break;
 			case 2: // Start RPM
-				targetRPM -= encoderChange *10;
+				targetRPM -= encoderChange * 10;
 				if (targetRPM < 500) targetRPM = 500;
 				if (targetRPM >= 9900) targetRPM = 9900;
 				break;
@@ -1150,7 +1151,7 @@ void writeWord(unsigned address, unsigned value)
 unsigned readWord(unsigned address)
 {
 	return word(EEPROM.read(address), EEPROM.read(address + 1));
-} 
+}
 //End Function
 //-------------------------------------------------------------------
 
