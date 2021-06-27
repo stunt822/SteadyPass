@@ -935,6 +935,7 @@ void servoMenu() {
 			}
 			break;
 		case 8:  // ENCODER BUTTON LONG PRESS
+			myPID.SetOutputLimits(minServo, maxServo);
 			Menu();
 			break;
 		case 16:  // ENCODER BUTTON NULL
