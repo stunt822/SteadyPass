@@ -237,7 +237,7 @@ void setup()
 	pinMode(PinDT, INPUT);                      //rotary encoder
 	pinMode(PinSW, INPUT_PULLUP);               //rotary encoder button
 	attachInterrupt(0, isr, RISING);            // interrupt 0 pin 3 for encoder
-	//pinMode(7,INPUT);                         //RPM pin, high when no pulse.
+	pinMode(rpmPin, INPUT);                         //RPM pin, high when no pulse.
 	attachInterrupt(4, rpmIntHandler, CHANGE);  //  RPM - pin 7 is grounded on pulse
 	myservo.attach(servoPin);                   // attaches the servo on pin  to the servo object
 	//PID Variables//
@@ -245,6 +245,7 @@ void setup()
 	Setpoint = target100;
 	//Turn on PID//
 	myPID.SetMode(AUTOMATIC);
+	myPID.SetSampleTime(300);
 
 
 	//******************LOADING SAVED SETTINGS*******************
