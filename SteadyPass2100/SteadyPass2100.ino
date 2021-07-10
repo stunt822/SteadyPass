@@ -81,7 +81,7 @@ const byte servoPin = 5;           //servo PWM connected here
 
 #if defined(__AVR_ATmega2560__)
   //Code in here will only be compiled if an Arduino Mega is used.
-	const byte rpmPin = 44;        //Engine RPM input connected here
+	const byte rpmPin = 20;        //Engine RPM input connected here
 	const byte PinCLK = 3;         //encoder second pin
 	const byte PinDT = 2;          // Used for reading DT signal of encoder
 #else
@@ -233,13 +233,13 @@ void setup()
 	}
 	PrintEZ("ACQUIRING SIGNAL", 30, 0, 1, 0, 0, false, 0);
 	PrintEZ("  PLEASE WAIT ", 30, 0, 3, 0, 0, false, 1000);
-	pinMode(PinCLK, INPUT);                     //rotary encoder
-	pinMode(PinDT, INPUT);                      //rotary encoder
-	pinMode(PinSW, INPUT_PULLUP);               //rotary encoder button
-	attachInterrupt(0, isr, RISING);            // interrupt 0 pin 3 for encoder
-	pinMode(rpmPin, INPUT);                         //RPM pin, high when no pulse.
-	attachInterrupt(4, rpmIntHandler, CHANGE);  //  RPM - pin 7 is grounded on pulse
-	myservo.attach(servoPin);                   // attaches the servo on pin  to the servo object
+	pinMode(PinCLK, INPUT);										            // rotary encoder
+	pinMode(PinDT, INPUT);													// rotary encoder
+	pinMode(PinSW, INPUT_PULLUP);								            // rotary encoder button
+	attachInterrupt(0, isr, RISING);										// interrupt 0 pin 3 for encoder
+	pinMode(rpmPin, INPUT);													// RPM pin, high when no pulse.
+	attachInterrupt(digitalPinToInterrupt(rpmPin), rpmIntHandler, CHANGE);  // RPM pin, is grounded on pulse
+	myservo.attach(servoPin);								                // attaches the servo on pin  to the servo object
 	//PID Variables//
 	Input = speed100;
 	Setpoint = target100;
