@@ -71,6 +71,7 @@ float voltage = 0, volt1, volt2;                //voltage value
 byte cylCoeff = 6;                              //Number of Cylinders
 boolean gpsMode = true;                         //GPS mode (true) or RPM mode (false)
 byte mode = 0;                                  //Calculations mode 0=off 1=RPM 2=MPH/KPH
+byte PrintLine = 0;
 
 
 //*****PIN CONFIGURATION******
@@ -136,6 +137,7 @@ volatile unsigned long pulsecount = 0; //incremented by interrupt
 volatile unsigned long previousMicros = 0;
 int targetRPM = 3000;
 byte CalcMode = 0;
+int currentRPM = 0;
 //*************SERVO INITIALIZATION*************
 Servo myservo;
 int minServo = 950;
@@ -652,14 +654,26 @@ void MainDisplay()
 
 
 	// Prints Water Temp and Air Temp
-	mydisp.setPrintPos(0, 4);
-	mydisp.print("WTR "); mydisp.print(wtrTemp); if (celsius)  mydisp.print("c  "); else mydisp.print("F  ");
-	mydisp.setPrintPos(0, 5);
-	mydisp.print("AIR "); mydisp.print(airTemp); if (celsius)  mydisp.print("c  "); else mydisp.print("F  ");
+	PrintLine = 4;
+	if (wtrTemp > 0) {
+		mydisp.setPrintPos(0, PrintLine);
+		mydisp.print("WTR "); mydisp.print(wtrTemp); if (celsius)  mydisp.print("c  "); else mydisp.print("F  ");
+		PrintLine++;
+	}
+	if (airTemp > 0) {
+		mydisp.setPrintPos(0, PrintLine);
+		mydisp.print("AIR "); mydisp.print(airTemp); if (celsius)  mydisp.print("c  "); else mydisp.print("F  ");
+		PrintLine++;
+	}
+
 
 	//Prints current RPM reading
-	mydisp.setPrintPos(0, 6);
-	mydisp.print("RPM "); mydisp.print(readRpm()); mydisp.print("    ");
+	currentRPM = readRpm();
+	if (currentRPM > 0) {
+		mydisp.setPrintPos(0, PrintLine);
+		mydisp.print("RPM "); mydisp.print(currentRPM); mydisp.print("    ");
+	}
+
 
 	//Prints the Main Speed value On Display
 	PrintEZ("", 203, 0, 0, 46, 22, false, 0);
